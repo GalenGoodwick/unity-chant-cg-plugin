@@ -191,17 +191,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Footer */}
-      <div className="mt-8 text-center">
-        <a
-          href="https://unitychant.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-muted hover:text-accent transition-colors"
-        >
-          Powered by Unity Chant
-        </a>
-      </div>
+      <div className="mt-8" />
     </div>
   )
 }

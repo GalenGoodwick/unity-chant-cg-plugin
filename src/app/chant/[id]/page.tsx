@@ -394,17 +394,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="mt-8 mb-4 text-center">
-        <a
-          href={`https://unitychant.com/chants/${id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-muted hover:text-accent transition-colors"
-        >
-          View on Unity Chant &rarr;
-        </a>
-      </div>
+      <div className="mt-8 mb-4" />
     </div>
   )
 }
