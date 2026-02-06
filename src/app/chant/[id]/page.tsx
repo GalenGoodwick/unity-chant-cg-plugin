@@ -202,7 +202,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
       </Link>
 
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4">
         <div className="flex items-start justify-between gap-2 mb-2">
           <h1 className="text-lg font-bold text-foreground">{status.question}</h1>
           <PhaseBadge phase={status.phase} />
@@ -210,36 +210,62 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
         {status.description && (
           <p className="text-sm text-muted mb-2">{status.description}</p>
         )}
-        <div className="flex items-center gap-3 text-xs text-muted">
-          <span>{status.ideaCount} ideas</span>
-          <span>{status.memberCount} members</span>
-          <span>Tier {status.currentTier}</span>
+        <p className="text-xs text-muted">by {status.creator.name}</p>
+      </div>
+
+      {/* Live Stats */}
+      <div className="mb-4 grid grid-cols-3 gap-2">
+        <div className="p-2.5 bg-surface rounded-lg border border-border text-center">
+          <p className="text-lg font-mono font-bold text-foreground">{status.ideaCount}</p>
+          <p className="text-xs text-muted">Ideas</p>
+        </div>
+        <div className="p-2.5 bg-surface rounded-lg border border-border text-center">
+          <p className="text-lg font-mono font-bold text-foreground">{status.memberCount}</p>
+          <p className="text-xs text-muted">Members</p>
+        </div>
+        <div className="p-2.5 bg-surface rounded-lg border border-border text-center">
+          <p className="text-lg font-mono font-bold text-foreground">{status.currentTier}</p>
+          <p className="text-xs text-muted">Tier</p>
         </div>
       </div>
 
-      {/* FCFS Progress */}
-      {status.fcfsProgress && (
+      {/* Voting Progress */}
+      {status.phase === 'VOTING' && (
         <div className="mb-4 p-3 bg-surface rounded-lg border border-border">
-          <div className="flex justify-between text-xs text-muted mb-1">
-            <span>Cell Progress</span>
-            <span>{status.fcfsProgress.currentCellVoters}/{status.fcfsProgress.votersNeeded} voters</span>
-          </div>
-          <div className="w-full bg-background rounded-full h-2 mb-2">
-            <div
-              className="bg-accent h-2 rounded-full transition-all"
-              style={{ width: `${(status.fcfsProgress.currentCellVoters / status.fcfsProgress.votersNeeded) * 100}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-muted">
-            <span>Tier Progress</span>
-            <span>{status.fcfsProgress.completedCells}/{status.fcfsProgress.totalCells} cells</span>
-          </div>
-          <div className="w-full bg-background rounded-full h-2">
-            <div
-              className="bg-success h-2 rounded-full transition-all"
-              style={{ width: `${(status.fcfsProgress.completedCells / status.fcfsProgress.totalCells) * 100}%` }}
-            />
-          </div>
+          {status.fcfsProgress ? (
+            <>
+              <div className="flex justify-between text-xs text-muted mb-1">
+                <span>Current Cell</span>
+                <span>{status.fcfsProgress.currentCellVoters}/{status.fcfsProgress.votersNeeded} voters</span>
+              </div>
+              <div className="w-full bg-background rounded-full h-2 mb-3">
+                <div
+                  className="bg-accent h-2 rounded-full transition-all"
+                  style={{ width: `${(status.fcfsProgress.currentCellVoters / status.fcfsProgress.votersNeeded) * 100}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-muted mb-1">
+                <span>Tier {status.currentTier} Progress</span>
+                <span>{status.fcfsProgress.completedCells}/{status.fcfsProgress.totalCells} cells done</span>
+              </div>
+              <div className="w-full bg-background rounded-full h-2">
+                <div
+                  className="bg-success h-2 rounded-full transition-all"
+                  style={{ width: `${status.fcfsProgress.totalCells > 0 ? (status.fcfsProgress.completedCells / status.fcfsProgress.totalCells) * 100 : 0}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-muted text-center">Voting in progress — Tier {status.currentTier}</p>
+          )}
+        </div>
+      )}
+
+      {/* Submission Phase Info */}
+      {status.phase === 'SUBMISSION' && (
+        <div className="mb-4 p-3 bg-accent/10 border border-accent/30 rounded-lg text-center">
+          <p className="text-sm text-accent font-medium">Accepting Ideas</p>
+          <p className="text-xs text-muted mt-1">Submit your ideas below. Voting starts when the creator is ready.</p>
         </div>
       )}
 
