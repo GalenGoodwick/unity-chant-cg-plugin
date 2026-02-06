@@ -261,11 +261,24 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
         </div>
       )}
 
-      {/* Submission Phase Info */}
+      {/* Phase Explainer */}
       {status.phase === 'SUBMISSION' && (
-        <div className="mb-4 p-3 bg-accent/10 border border-accent/30 rounded-lg text-center">
-          <p className="text-sm text-accent font-medium">Accepting Ideas</p>
-          <p className="text-xs text-muted mt-1">Submit your ideas below. Voting starts when the creator is ready.</p>
+        <div className="mb-4 p-3 bg-accent/10 border border-accent/30 rounded-lg">
+          <p className="text-sm text-accent font-medium mb-1">Accepting Ideas</p>
+          <p className="text-xs text-muted">Submit your ideas below. Once there are enough, the creator starts voting.</p>
+          <p className="text-xs text-muted mt-1">Everyone can vote — you don&apos;t need to submit an idea first.</p>
+        </div>
+      )}
+      {status.phase === 'VOTING' && (
+        <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
+          <p className="text-sm text-warning font-medium mb-1">How Voting Works</p>
+          <p className="text-xs text-muted">You have <span className="text-foreground font-medium">10 XP</span> to distribute across the ideas below. Give more to ideas you think are strongest.</p>
+          <p className="text-xs text-muted mt-1">Votes are grouped into cells of 5 people. Top ideas advance to the next tier until a priority emerges.</p>
+        </div>
+      )}
+      {status.phase === 'COMPLETED' && !status.champion && (
+        <div className="mb-4 p-3 bg-surface border border-border rounded-lg text-center">
+          <p className="text-sm text-muted">This chant has completed.</p>
         </div>
       )}
 
