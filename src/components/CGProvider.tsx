@@ -2,7 +2,7 @@
 
 import { CgPluginLib, CommunityInfoResponsePayload, UserInfoResponsePayload } from '@common-ground-dao/cg-plugin-lib'
 import { useSearchParams } from 'next/navigation'
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 
 const publicKey = process.env.NEXT_PUBLIC_PUBKEY || ''
 
@@ -14,6 +14,7 @@ interface CGContextValue {
   community: CommunityInfoResponsePayload | null
   loading: boolean
   error: string | null
+  retry: () => void
 }
 
 const CGContext = createContext<CGContextValue>({
@@ -21,6 +22,7 @@ const CGContext = createContext<CGContextValue>({
   community: null,
   loading: true,
   error: null,
+  retry: () => {},
 })
 
 export function useCG() {
@@ -35,8 +37,41 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
   const searchParams = useSearchParams()
   const iframeUid = searchParams.get('iframeUid')
 
+  const doInit = useCallback(async () => {
+    if (!iframeUid || !publicKey) return
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      console.log('[UC] Step 1: CgPluginLib.initialize...')
+      const lib = await CgPluginLib.initialize(iframeUid, '/api/sign', publicKey)
+      console.log('[UC] Step 1 OK: SDK initialized')
+
+      console.log('[UC] Step 2: getUserInfo...')
+      const userRes = await lib.getUserInfo()
+      console.log('[UC] Step 2 OK: user =', userRes.data?.name)
+      setUser(userRes.data)
+
+      console.log('[UC] Step 3: getCommunityInfo...')
+      const communityRes = await lib.getCommunityInfo()
+      console.log('[UC] Step 3 OK: community =', communityRes.data?.title)
+      setCommunity(communityRes.data)
+    } catch (err) {
+      console.error('[UC] CG error:', err)
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg || 'Unknown CG SDK error')
+    } finally {
+      setLoading(false)
+    }
+  }, [iframeUid])
+
+  const retry = useCallback(() => {
+    cgInitStarted = false
+    doInit()
+  }, [doInit])
+
   useEffect(() => {
-    // Module-level guard — Suspense remounts reset useRef, but not module vars
     if (cgInitStarted) return
 
     if (!iframeUid) {
@@ -52,35 +87,11 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
     }
 
     cgInitStarted = true
-
-    const init = async () => {
-      try {
-        console.log('[UC] Initializing CG SDK...')
-        const lib = await CgPluginLib.initialize(iframeUid, '/api/sign', publicKey)
-        console.log('[UC] CG SDK initialized')
-
-        // Sequential calls — matching CG sample pattern to avoid duplicate signed requests
-        const userRes = await lib.getUserInfo()
-        console.log('[UC] Got user:', userRes.data?.name)
-        setUser(userRes.data)
-
-        const communityRes = await lib.getCommunityInfo()
-        console.log('[UC] Got community:', communityRes.data?.title)
-        setCommunity(communityRes.data)
-      } catch (err) {
-        console.error('[UC] CG init error:', err)
-        const msg = err instanceof Error ? err.message : String(err)
-        setError(msg || 'Unknown CG SDK error')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    init()
-  }, [iframeUid])
+    doInit()
+  }, [iframeUid, doInit])
 
   return (
-    <CGContext.Provider value={{ user, community, loading, error }}>
+    <CGContext.Provider value={{ user, community, loading, error, retry }}>
       {children}
     </CGContext.Provider>
   )

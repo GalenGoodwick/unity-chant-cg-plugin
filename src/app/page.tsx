@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
 export default function Home() {
-  const { user, community, loading, error } = useCG()
+  const { user, community, loading, error, retry } = useCG()
   const [chants, setChants] = useState<Chant[]>([])
   const [loadingChants, setLoadingChants] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
@@ -96,6 +96,12 @@ export default function Home() {
           <p className="text-error mb-2 text-sm break-all">{error}</p>
           <p className="text-muted text-xs mb-1">iframeUid: {searchParams.get('iframeUid') || 'none'}</p>
           <p className="text-muted text-xs mb-1">pubkey: {process.env.NEXT_PUBLIC_PUBKEY ? `set (${process.env.NEXT_PUBLIC_PUBKEY.length} chars)` : 'MISSING'}</p>
+          <button
+            onClick={retry}
+            className="mt-3 px-4 py-1.5 bg-accent hover:bg-accent-hover text-white text-sm rounded-lg transition-colors"
+          >
+            Retry
+          </button>
           <p className="text-muted text-xs mt-3">Check browser console for [UC] logs.</p>
         </div>
       </div>
