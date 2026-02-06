@@ -2,9 +2,12 @@
 
 import { CgPluginLib, CommunityInfoResponsePayload, UserInfoResponsePayload } from '@common-ground-dao/cg-plugin-lib'
 import { useSearchParams } from 'next/navigation'
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 
 const publicKey = process.env.NEXT_PUBLIC_PUBKEY || ''
+
+// Module-level guard — survives Suspense unmount/remount (useRef does not)
+let cgInitStarted = false
 
 interface CGContextValue {
   user: UserInfoResponsePayload | null
@@ -31,11 +34,10 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const iframeUid = searchParams.get('iframeUid')
-  const initRef = useRef(false)
 
   useEffect(() => {
-    // Guard against double initialization (React strict mode / Suspense re-render)
-    if (initRef.current) return
+    // Module-level guard — Suspense remounts reset useRef, but not module vars
+    if (cgInitStarted) return
 
     if (!iframeUid) {
       setError('Missing iframeUid — this app must run inside Common Ground')
@@ -49,7 +51,7 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
       return
     }
 
-    initRef.current = true
+    cgInitStarted = true
 
     const init = async () => {
       try {
