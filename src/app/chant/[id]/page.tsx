@@ -266,7 +266,6 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
         <div className="mb-4 p-3 bg-accent/10 border border-accent/30 rounded-lg">
           <p className="text-sm text-accent font-medium mb-1">Accepting Ideas</p>
           <p className="text-xs text-muted">Submit your ideas below. The creator will start voting when ready.</p>
-          <p className="text-xs text-muted mt-1">Everyone can vote — you don&apos;t need to submit an idea first.</p>
         </div>
       )}
       {status.phase === 'VOTING' && (
