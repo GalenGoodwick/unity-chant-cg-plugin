@@ -2,7 +2,7 @@
 
 import { CgPluginLib, CommunityInfoResponsePayload, UserInfoResponsePayload } from '@common-ground-dao/cg-plugin-lib'
 import { useSearchParams } from 'next/navigation'
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 
 const publicKey = process.env.NEXT_PUBLIC_PUBKEY || ''
 
@@ -31,8 +31,12 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
   const [error, setError] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const iframeUid = searchParams.get('iframeUid')
+  const initRef = useRef(false)
 
   useEffect(() => {
+    // Guard against double initialization (React strict mode / Suspense re-render)
+    if (initRef.current) return
+
     if (!iframeUid) {
       setError('Missing iframeUid — this app must run inside Common Ground')
       setLoading(false)
@@ -45,19 +49,21 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
       return
     }
 
+    initRef.current = true
+
     const init = async () => {
       try {
-        console.log('[UC] Initializing CG SDK with iframeUid:', iframeUid, 'pubkey length:', publicKey.length)
+        console.log('[UC] Initializing CG SDK...')
         const lib = await CgPluginLib.initialize(iframeUid, '/api/sign', publicKey)
-        console.log('[UC] CG SDK initialized, fetching user + community info...')
+        console.log('[UC] CG SDK initialized')
 
-        const [userRes, communityRes] = await Promise.all([
-          lib.getUserInfo(),
-          lib.getCommunityInfo(),
-        ])
-
-        console.log('[UC] Got user:', userRes.data?.name, 'community:', communityRes.data?.title)
+        // Sequential calls — matching CG sample pattern to avoid duplicate signed requests
+        const userRes = await lib.getUserInfo()
+        console.log('[UC] Got user:', userRes.data?.name)
         setUser(userRes.data)
+
+        const communityRes = await lib.getCommunityInfo()
+        console.log('[UC] Got community:', communityRes.data?.title)
         setCommunity(communityRes.data)
       } catch (err) {
         console.error('[UC] CG init error:', err)
