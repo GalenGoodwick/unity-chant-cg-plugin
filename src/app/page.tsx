@@ -92,10 +92,11 @@ export default function Home() {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="text-center max-w-sm">
-          <p className="text-error mb-2">{error}</p>
-          <p className="text-muted text-sm mb-3">Make sure this plugin is loaded inside a Common Ground community.</p>
-          <p className="text-muted text-xs opacity-50">iframeUid: {searchParams.get('iframeUid') || 'none'}</p>
-          <p className="text-muted text-xs opacity-50">pubkey: {process.env.NEXT_PUBLIC_PUBKEY ? 'set' : 'missing'}</p>
+          <h2 className="text-foreground font-bold mb-2">Unity Chant Plugin v2</h2>
+          <p className="text-error mb-2 text-sm break-all">{error}</p>
+          <p className="text-muted text-xs mb-1">iframeUid: {searchParams.get('iframeUid') || 'none'}</p>
+          <p className="text-muted text-xs mb-1">pubkey: {process.env.NEXT_PUBLIC_PUBKEY ? `set (${process.env.NEXT_PUBLIC_PUBKEY.length} chars)` : 'MISSING'}</p>
+          <p className="text-muted text-xs mt-3">Check browser console for [UC] logs.</p>
         </div>
       </div>
     )

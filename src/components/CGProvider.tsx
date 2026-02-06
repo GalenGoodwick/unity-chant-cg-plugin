@@ -47,19 +47,22 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
 
     const init = async () => {
       try {
+        console.log('[UC] Initializing CG SDK with iframeUid:', iframeUid, 'pubkey length:', publicKey.length)
         const lib = await CgPluginLib.initialize(iframeUid, '/api/sign', publicKey)
+        console.log('[UC] CG SDK initialized, fetching user + community info...')
 
         const [userRes, communityRes] = await Promise.all([
           lib.getUserInfo(),
           lib.getCommunityInfo(),
         ])
 
+        console.log('[UC] Got user:', userRes.data?.name, 'community:', communityRes.data?.title)
         setUser(userRes.data)
         setCommunity(communityRes.data)
       } catch (err) {
-        console.error('CG init error:', err)
+        console.error('[UC] CG init error:', err)
         const msg = err instanceof Error ? err.message : String(err)
-        setError(`CG error: ${msg}`)
+        setError(msg || 'Unknown CG SDK error')
       } finally {
         setLoading(false)
       }
