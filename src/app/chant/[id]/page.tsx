@@ -278,13 +278,16 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
             {submitSuccess && <p className="text-success text-xs mt-1">Idea submitted!</p>}
           </form>
 
-          {/* Start Voting (creator only) */}
-          {isCreator && status.phase === 'SUBMISSION' && status.ideaCount >= 10 && (
+          {/* Creator Controls */}
+          {isCreator && status.phase === 'SUBMISSION' && (
             <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
-              <p className="text-xs text-warning mb-2">Ready to start voting? ({status.ideaCount} ideas submitted)</p>
+              <p className="text-xs text-warning mb-2">
+                {status.ideaCount} idea{status.ideaCount !== 1 ? 's' : ''} submitted
+                {status.ideaCount < 5 && ' — need at least 5 to start voting'}
+              </p>
               <button
                 onClick={handleStartVoting}
-                disabled={starting}
+                disabled={starting || status.ideaCount < 5}
                 className="w-full py-2 bg-warning hover:bg-warning/80 disabled:opacity-50 text-white text-sm rounded-lg transition-colors"
               >
                 {starting ? 'Starting...' : 'Start Voting'}
