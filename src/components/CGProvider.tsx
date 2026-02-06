@@ -58,7 +58,8 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
         setCommunity(communityRes.data)
       } catch (err) {
         console.error('CG init error:', err)
-        setError('Failed to connect to Common Ground')
+        const msg = err instanceof Error ? err.message : String(err)
+        setError(`CG error: ${msg}`)
       } finally {
         setLoading(false)
       }

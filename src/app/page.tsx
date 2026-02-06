@@ -91,9 +91,11 @@ export default function Home() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="text-center">
+        <div className="text-center max-w-sm">
           <p className="text-error mb-2">{error}</p>
-          <p className="text-muted text-sm">Make sure this plugin is loaded inside a Common Ground community.</p>
+          <p className="text-muted text-sm mb-3">Make sure this plugin is loaded inside a Common Ground community.</p>
+          <p className="text-muted text-xs opacity-50">iframeUid: {searchParams.get('iframeUid') || 'none'}</p>
+          <p className="text-muted text-xs opacity-50">pubkey: {process.env.NEXT_PUBLIC_PUBKEY ? 'set' : 'missing'}</p>
         </div>
       </div>
     )
