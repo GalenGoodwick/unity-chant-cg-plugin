@@ -4,7 +4,7 @@ import { CgPluginLib, CommunityInfoResponsePayload, UserInfoResponsePayload } fr
 import { useSearchParams } from 'next/navigation'
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 
-const publicKey = process.env.NEXT_PUBLIC_PUBKEY || ''
+const publicKey = (process.env.NEXT_PUBLIC_PUBKEY || '').replace(/\\n/g, '\n')
 
 // Module-level guard — survives Suspense unmount/remount (useRef does not)
 let cgInitStarted = false
