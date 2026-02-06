@@ -265,15 +265,23 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
       {status.phase === 'SUBMISSION' && (
         <div className="mb-4 p-3 bg-accent/10 border border-accent/30 rounded-lg">
           <p className="text-sm text-accent font-medium mb-1">Accepting Ideas</p>
-          <p className="text-xs text-muted">Submit your ideas below. Once there are enough, the creator starts voting.</p>
+          <p className="text-xs text-muted">Submit your ideas below. The creator will start voting when ready.</p>
           <p className="text-xs text-muted mt-1">Everyone can vote — you don&apos;t need to submit an idea first.</p>
         </div>
       )}
       {status.phase === 'VOTING' && (
         <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
           <p className="text-sm text-warning font-medium mb-1">How Voting Works</p>
-          <p className="text-xs text-muted">You have <span className="text-foreground font-medium">10 XP</span> to distribute across the ideas below. Give more to ideas you think are strongest.</p>
-          <p className="text-xs text-muted mt-1">Votes are grouped into cells of 5 people. Top ideas advance to the next tier until a priority emerges.</p>
+          <p className="text-xs text-muted">Distribute <span className="text-foreground font-medium">10 XP</span> across the ideas below — give more to ideas you think are strongest.</p>
+          <p className="text-xs text-muted mt-1">Votes happen in small cells of 5 people. Winning ideas advance to the next tier, where they compete again. This repeats until one priority emerges.</p>
+          <a
+            href="https://unitychant.com/how-it-works"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-accent hover:underline mt-1 inline-block"
+          >
+            Learn how it works &rarr;
+          </a>
         </div>
       )}
       {status.phase === 'COMPLETED' && !status.champion && (
