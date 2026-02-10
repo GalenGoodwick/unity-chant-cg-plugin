@@ -169,7 +169,7 @@ export default function Home() {
             <div className="mb-3 p-3 bg-background rounded-lg border border-border space-y-3">
               {/* Voting Mode */}
               <div>
-                <label className="text-xs text-muted block mb-1">Voting Mode</label>
+                <label className="text-xs text-foreground block mb-1">Voting Mode</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -194,45 +194,59 @@ export default function Home() {
                     Balanced
                   </button>
                 </div>
+                <p className="text-xs text-muted mt-1">
+                  {mode === 'fcfs'
+                    ? 'Anyone can vote as soon as they arrive. Cells fill one at a time.'
+                    : 'Waits for enough participants, then assigns everyone to cells at once.'}
+                </p>
               </div>
 
               {/* Continuous Flow */}
-              <div className="flex items-center justify-between">
-                <div>
+              <div>
+                <div className="flex items-center justify-between">
                   <label className="text-xs text-foreground block">Continuous Flow</label>
-                  <p className="text-xs text-muted">Voting starts as ideas come in</p>
+                  <button
+                    type="button"
+                    onClick={() => setContinuous(!continuous)}
+                    className={`w-10 h-5 rounded-full transition-colors relative ${
+                      continuous ? 'bg-accent' : 'bg-border'
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                      continuous ? 'left-5' : 'left-0.5'
+                    }`} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setContinuous(!continuous)}
-                  className={`w-10 h-5 rounded-full transition-colors relative ${
-                    continuous ? 'bg-accent' : 'bg-border'
-                  }`}
-                >
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                    continuous ? 'left-5' : 'left-0.5'
-                  }`} />
-                </button>
+                <p className="text-xs text-muted mt-1">
+                  {continuous
+                    ? 'Voting begins automatically once enough ideas are submitted. New ideas keep forming new voting cells even while voting is happening.'
+                    : 'All ideas are collected first. The creator manually starts voting when ready.'}
+                </p>
               </div>
 
-              {/* Idea Goal */}
-              <div>
-                <label className="text-xs text-muted block mb-1">
-                  Ideas to start voting: <span className="text-foreground font-mono">{ideaGoal}</span>
-                </label>
-                <input
-                  type="range"
-                  min={2}
-                  max={50}
-                  value={ideaGoal}
-                  onChange={(e) => setIdeaGoal(parseInt(e.target.value))}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted">
-                  <span>2</span>
-                  <span>50</span>
+              {/* Idea Goal — only relevant with continuous flow */}
+              {continuous && (
+                <div>
+                  <label className="text-xs text-foreground block mb-1">
+                    Ideas to start voting: <span className="font-mono">{ideaGoal}</span>
+                  </label>
+                  <input
+                    type="range"
+                    min={2}
+                    max={50}
+                    value={ideaGoal}
+                    onChange={(e) => setIdeaGoal(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted">
+                    <span>2</span>
+                    <span>50</span>
+                  </div>
+                  <p className="text-xs text-muted mt-1">
+                    Voting starts automatically after this many ideas are submitted. Every {ideaGoal} new ideas creates another voting cell.
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
           )}
           {createError && <p className="text-error text-xs mb-2">{createError}</p>}
