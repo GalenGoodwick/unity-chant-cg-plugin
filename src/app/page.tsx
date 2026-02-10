@@ -19,7 +19,20 @@ export default function Home() {
   const [mode, setMode] = useState<'fcfs' | 'balanced'>('fcfs')
   const [continuous, setContinuous] = useState(true)
   const [ideaGoal, setIdeaGoal] = useState(5)
+  const [ideas, setIdeas] = useState<string[]>(['', '', '', '', ''])
+  const [createProgress, setCreateProgress] = useState('')
   const searchParams = useSearchParams()
+
+  // Resize idea boxes when ideaGoal changes
+  const updateIdeaGoal = (goal: number) => {
+    setIdeaGoal(goal)
+    const count = goal === 0 ? 5 : goal
+    setIdeas(prev => {
+      if (prev.length === count) return prev
+      if (prev.length < count) return [...prev, ...Array(count - prev.length).fill('')]
+      return prev.slice(0, count)
+    })
+  }
 
   const fetchChants = useCallback(async () => {
     if (!community) return
@@ -75,6 +88,7 @@ export default function Home() {
     console.log('[UC] Creating chant:', payload)
 
     try {
+      setCreateProgress('Creating chant...')
       const res = await fetch('/api/chants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,14 +102,37 @@ export default function Home() {
         throw new Error(data.error || `Failed to create (${res.status})`)
       }
 
+      // Auto-submit seeded ideas
+      const filledIdeas = ideas.filter(t => t.trim())
+      for (let i = 0; i < filledIdeas.length; i++) {
+        setCreateProgress(`Submitting idea ${i + 1}/${filledIdeas.length}...`)
+        try {
+          await fetch(`/api/chants/${data.id}/ideas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cgUserId: user.id,
+              cgUsername: user.name,
+              cgImageUrl: user.imageUrl,
+              text: filledIdeas[i].trim(),
+            }),
+          })
+        } catch (ideaErr) {
+          console.error(`[UC] Failed to submit idea ${i + 1}:`, ideaErr)
+        }
+      }
+
       setQuestion('')
       setDescription('')
+      setIdeas(['', '', '', '', ''])
       setShowCreate(false)
+      setCreateProgress('')
       fetchChants()
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       console.error('[UC] Create error:', msg, err)
       setCreateError(msg || 'Unknown error — check browser console for [UC] logs')
+      setCreateProgress('')
     } finally {
       setCreating(false)
     }
@@ -241,25 +278,63 @@ export default function Home() {
               {/* Idea Goal — only relevant with FCFS + continuous flow */}
               {continuous && mode === 'fcfs' && (
                 <div>
-                  <label className="text-xs text-foreground block mb-1">
-                    Ideas to start voting
-                  </label>
-                  <input
-                    type="number"
-                    min={2}
-                    max={50}
-                    value={ideaGoal}
-                    onChange={(e) => setIdeaGoal(Math.max(2, Math.min(50, parseInt(e.target.value) || 5)))}
-                    className="w-20 px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground font-mono focus:outline-none focus:border-accent"
-                  />
+                  <label className="text-xs text-foreground block mb-1">Ideas to start voting</label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: 0, label: 'Manual' },
+                      { value: 5, label: '5 Ideas' },
+                      { value: 10, label: '10 Ideas' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateIdeaGoal(opt.value)}
+                        className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                          ideaGoal === opt.value
+                            ? 'bg-accent/20 border-accent text-accent'
+                            : 'bg-background border-border text-muted hover:border-accent/50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                   <p className="text-xs text-muted mt-1">
-                    Voting starts automatically after this many ideas are submitted. Every {ideaGoal} new ideas creates another voting cell.
+                    {ideaGoal === 0
+                      ? 'You start voting manually from the facilitator panel.'
+                      : `Voting starts automatically after ${ideaGoal} ideas. Every ${ideaGoal} new ideas creates another voting cell.`}
                   </p>
                 </div>
               )}
             </div>
           )}
+          {/* Seed Ideas */}
+          <div className="mb-3">
+            <label className="text-xs text-foreground block mb-2">Seed Ideas {ideaGoal === 0 && <span className="text-muted">(optional)</span>}</label>
+            <div className="space-y-2">
+              {ideas.map((idea, i) => (
+                <input
+                  key={i}
+                  type="text"
+                  placeholder={ideaGoal === 0 ? `Idea ${i + 1} (optional)` : `Idea ${i + 1}`}
+                  value={idea}
+                  onChange={(e) => {
+                    const next = [...ideas]
+                    next[i] = e.target.value
+                    setIdeas(next)
+                  }}
+                  maxLength={500}
+                  className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent"
+                />
+              ))}
+            </div>
+            <p className="text-xs text-muted mt-1">
+              Pre-fill ideas to kick things off. Others can add more after creation.
+            </p>
+          </div>
+
           {createError && <p className="text-error text-xs mb-2">{createError}</p>}
+          {createProgress && <p className="text-accent text-xs mb-2 animate-pulse">{createProgress}</p>}
           <button
             type="submit"
             disabled={creating || !question.trim()}

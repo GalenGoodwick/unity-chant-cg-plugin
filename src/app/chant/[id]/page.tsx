@@ -400,14 +400,14 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
               </button>
             )}
 
-            {/* Close Submissions — VOTING + continuous flow + tier 1 */}
-            {status.phase === 'VOTING' && status.currentTier === 1 && (
+            {/* Close Submissions — VOTING + continuous flow */}
+            {status.phase === 'VOTING' && status.continuousFlow && (
               <button
-                onClick={() => handleFacilitatorAction('close', 'Close submissions')}
+                onClick={() => handleFacilitatorAction('close', 'Close & advance')}
                 disabled={actionLoading === 'close'}
                 className="py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
               >
-                {actionLoading === 'close' ? '...' : 'Close Submissions'}
+                {actionLoading === 'close' ? '...' : 'Close & Advance'}
               </button>
             )}
 
