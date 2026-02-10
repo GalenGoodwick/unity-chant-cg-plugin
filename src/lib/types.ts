@@ -49,6 +49,7 @@ export interface ChantStatus {
     currentCellIdeas?: { id: string; text: string; author: { id: string; name: string } }[]
   } | null
   hasVoted: boolean
+  votedTiers: number[]
   createdAt: string
 }
 

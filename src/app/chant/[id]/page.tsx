@@ -451,8 +451,8 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
               </div>
             )}
 
-            {/* Reopen — VOTING or ACCUMULATING */}
-            {(status.phase === 'VOTING' || status.phase === 'ACCUMULATING') && (
+            {/* Reopen — VOTING or ACCUMULATING, but not continuous flow past tier 1 */}
+            {(status.phase === 'VOTING' || status.phase === 'ACCUMULATING') && !(status.continuousFlow && status.currentTier > 1) && (
               <div>
                 <button
                   onClick={() => handleFacilitatorAction('reopen', 'Reopen')}
@@ -475,8 +475,40 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
         </div>
       )}
 
-      {/* Already voted indicator */}
-      {status.phase === 'VOTING' && status.hasVoted && !voteResult && (
+      {/* Vote history across tiers */}
+      {status.phase === 'VOTING' && status.votedTiers?.length > 0 && (
+        <div className="mb-4 p-3 bg-surface rounded-lg border border-border">
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-xs font-semibold text-muted">Your Votes</p>
+            <div className="flex gap-1">
+              {Array.from({ length: status.currentTier }, (_, i) => i + 1).map(tier => (
+                <span
+                  key={tier}
+                  className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-mono font-bold ${
+                    status.votedTiers.includes(tier)
+                      ? 'bg-success/20 text-success'
+                      : tier === status.currentTier
+                      ? 'bg-warning/20 text-warning animate-pulse'
+                      : 'bg-background text-muted'
+                  }`}
+                  title={status.votedTiers.includes(tier) ? `Voted in tier ${tier}` : tier === status.currentTier ? `Vote now — tier ${tier}` : `Tier ${tier}`}
+                >
+                  {tier}
+                </span>
+              ))}
+            </div>
+          </div>
+          {status.hasVoted && !voteResult && (
+            <p className="text-xs text-muted">Voted tier {status.currentTier} — waiting for other voters to finish.</p>
+          )}
+          {!status.hasVoted && votingIdeas.length > 0 && (
+            <p className="text-xs text-warning">Tier {status.currentTier} vote available below.</p>
+          )}
+        </div>
+      )}
+
+      {/* Already voted (no history yet — tier 1 only) */}
+      {status.phase === 'VOTING' && status.hasVoted && !voteResult && (!status.votedTiers || status.votedTiers.length === 0) && (
         <div className="mb-4 p-4 bg-success/10 border border-success/30 rounded-lg text-center">
           <p className="text-success font-semibold mb-1">You've already voted this tier</p>
           <p className="text-xs text-muted">Waiting for other voters to complete their cells.</p>
