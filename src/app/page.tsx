@@ -15,7 +15,7 @@ export default function Home() {
   const [description, setDescription] = useState('')
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
-  const [showSettings, setShowSettings] = useState(false)
+  const [showSettings, setShowSettings] = useState(true)
   const [mode, setMode] = useState<'fcfs' | 'balanced'>('fcfs')
   const [continuous, setContinuous] = useState(true)
   const [ideaGoal, setIdeaGoal] = useState(5)
