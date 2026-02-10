@@ -65,12 +65,32 @@ export interface IdeaInfo {
   author: { id: string; name: string; cgId?: string }
 }
 
+export interface CellIdea {
+  id: string
+  text: string
+  totalXP: number
+  status: string
+  author: { name: string }
+}
+
 export interface CellInfo {
   id: string
   tier: number
   status: string
   createdAt: string
   _count: { participants: number; votes: number }
+  ideas?: CellIdea[]
+}
+
+export interface CommentInfo {
+  id: string
+  text: string
+  ideaId: string | null
+  createdAt: string
+  upvoteCount: number
+  userHasUpvoted: boolean
+  spreadCount?: number
+  user: { id: string; name: string; image: string | null }
 }
 
 export interface VoteResult {

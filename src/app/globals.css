@@ -1,19 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #0f0f1a;
-  --foreground: #ededed;
+  --background: #0d0d12;
+  --foreground: #fcfcfc;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling for dark theme */
+/* Scrollbar — CG dark style */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -21,16 +25,19 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2a4a;
+  background: #282a39;
   border-radius: 3px;
 }
+::-webkit-scrollbar-thumb:hover {
+  background: #393c51;
+}
 
-/* XP slider styling */
+/* XP slider — CG brand colors */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
-  background: #2a2a4a;
+  background: #222430;
   border-radius: 3px;
   outline: none;
 }
@@ -39,7 +46,17 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 18px;
   height: 18px;
-  background: #0891b2;
+  background: #404bbb;
   border-radius: 50%;
   cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(64, 75, 187, 0.2);
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: #636cca;
+}
+
+/* Focus ring — CG brand */
+*:focus-visible {
+  outline: 2px solid #404bbb;
+  outline-offset: 2px;
 }

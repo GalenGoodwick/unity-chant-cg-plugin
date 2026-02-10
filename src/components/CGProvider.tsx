@@ -75,6 +75,15 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (cgInitStarted) return
 
+    // Dev mode: mock user/community on localhost
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      cgInitStarted = true
+      setUser({ id: 'dev-user-1', name: 'Dev User', imageUrl: '', roles: [] } as unknown as UserInfoResponsePayload)
+      setCommunity({ id: 'dev-community-1', title: 'Dev Community', imageUrl: '' } as unknown as CommunityInfoResponsePayload)
+      setLoading(false)
+      return
+    }
+
     if (!iframeUid) {
       setError('Missing iframeUid — this app must run inside Common Ground')
       setLoading(false)

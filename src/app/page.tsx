@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { debugLog, debugError } from '@/lib/debug'
+import { AmbientConstellation } from '@/components/ConstellationCanvas'
 
 export default function Home() {
   const { user, community, loading, error, retry } = useCG()
@@ -26,7 +27,6 @@ export default function Home() {
   const [createProgress, setCreateProgress] = useState('')
   const searchParams = useSearchParams()
 
-  // Resize idea boxes when ideaGoal changes
   const updateIdeaGoal = (goal: number) => {
     setIdeaGoal(goal)
     const count = goal === 0 ? 5 : goal
@@ -55,7 +55,6 @@ export default function Home() {
     if (community) fetchChants()
   }, [community, fetchChants])
 
-  // Poll for updates
   useEffect(() => {
     if (!community) return
     const interval = setInterval(fetchChants, 15000)
@@ -106,7 +105,6 @@ export default function Home() {
         throw new Error(data.error || `Failed to create (${res.status})`)
       }
 
-      // Auto-submit seeded ideas
       setIdeaStatus({})
       let ideaSuccesses = 0
       let ideaFailures = 0
@@ -175,7 +173,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-muted animate-pulse">Connecting to Common Ground...</div>
+        <div className="text-muted animate-pulse text-sm">Connecting to Common Ground...</div>
       </div>
     )
   }
@@ -184,13 +182,14 @@ export default function Home() {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="text-center max-w-sm">
-          <h2 className="text-foreground font-bold mb-2">Unity Chant Plugin v2</h2>
+          <h2 className="text-foreground font-semibold mb-1">HeartCall</h2>
+          <p className="text-[10px] text-muted/60 mb-2">by Unity Chant</p>
           <p className="text-error mb-2 text-sm break-all">{error}</p>
           <p className="text-muted text-xs mb-1">iframeUid: {searchParams.get('iframeUid') || 'none'}</p>
           <p className="text-muted text-xs mb-1">pubkey: {process.env.NEXT_PUBLIC_PUBKEY ? `set (${process.env.NEXT_PUBLIC_PUBKEY.length} chars)` : 'MISSING'}</p>
           <button
             onClick={retry}
-            className="mt-3 px-4 py-1.5 bg-accent hover:bg-accent-hover text-white text-sm rounded-lg transition-colors"
+            className="mt-3 px-4 py-1.5 bg-accent hover:bg-accent-hover text-white text-sm rounded-cg transition-colors"
           >
             Retry
           </button>
@@ -200,21 +199,23 @@ export default function Home() {
     )
   }
 
-  // Build iframeUid param string to pass through navigation
   const uidParam = searchParams.get('iframeUid') ? `?iframeUid=${searchParams.get('iframeUid')}` : ''
 
   return (
-    <div className="max-w-lg mx-auto p-4 min-h-screen">
+    <div className="max-w-lg mx-auto p-4 min-h-screen relative">
+      {/* Background: constellation + fire + heart (hidden on create form) */}
+      {!showCreate && <AmbientConstellation />}
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5 relative z-10">
         <div>
-          <h1 className="text-lg font-bold text-foreground">Unity Chant</h1>
+          <h1 className="text-base font-semibold text-foreground tracking-tight">HeartCall</h1>
+          <p className="text-[10px] text-muted/60">by Unity Chant</p>
           <p className="text-xs text-muted">{community?.title}</p>
         </div>
         <button
           onClick={() => {
             if (showCreate) {
-              // Reset form on cancel
               setQuestion('')
               setDescription('')
               setCreateError('')
@@ -228,7 +229,7 @@ export default function Home() {
             }
             setShowCreate(!showCreate)
           }}
-          className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-sm rounded-lg transition-colors"
+          className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-medium rounded-cg transition-colors shadow-cg-sm"
         >
           {showCreate ? 'Cancel' : '+ New Chant'}
         </button>
@@ -236,15 +237,16 @@ export default function Home() {
 
       {/* Create Form */}
       {showCreate && (
-        <form onSubmit={handleCreate} className="mb-6 p-4 bg-surface rounded-lg border border-border">
-          <h2 className="text-sm font-semibold mb-3">Start a New Chant</h2>
+        <form onSubmit={handleCreate} className="mb-5 p-4 bg-surface rounded-cg border border-border shadow-cg-md relative z-10">
+          <h2 className="text-sm font-semibold mb-1 text-foreground">Start a New Chant</h2>
+          <p className="text-[11px] text-muted mb-3 leading-relaxed">Tip: Open-ended questions work best. Let hearts explore the space.</p>
           <input
             type="text"
             placeholder="What should we decide?"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             maxLength={200}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted mb-2 focus:outline-none focus:border-accent"
+            className="w-full px-3 py-2 bg-background border border-border rounded-cg text-sm text-foreground placeholder-muted/50 mb-2 focus:outline-none focus:border-accent transition-colors"
           />
           <textarea
             placeholder="Add context (optional)"
@@ -252,32 +254,30 @@ export default function Home() {
             onChange={(e) => setDescription(e.target.value)}
             maxLength={500}
             rows={2}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted mb-2 focus:outline-none focus:border-accent resize-none"
+            className="w-full px-3 py-2 bg-background border border-border rounded-cg text-sm text-foreground placeholder-muted/50 mb-2 focus:outline-none focus:border-accent resize-none transition-colors"
           />
 
-          {/* Settings toggle */}
           <button
             type="button"
             onClick={() => setShowSettings(!showSettings)}
-            className="text-xs text-muted hover:text-foreground mb-2 flex items-center gap-1"
+            className="text-xs text-muted hover:text-foreground mb-2 flex items-center gap-1 transition-colors"
           >
-            <span>{showSettings ? '▾' : '▸'}</span>
+            <span className="text-[10px]">{showSettings ? '\u25BE' : '\u25B8'}</span>
             Settings
           </button>
 
           {showSettings && (
-            <div className="mb-3 p-3 bg-background rounded-lg border border-border space-y-3">
-              {/* Voting Mode */}
+            <div className="mb-3 p-3 bg-background rounded-cg border border-border space-y-3">
               <div>
-                <label className="text-xs text-foreground block mb-1">Voting Mode</label>
+                <label className="text-xs text-foreground/80 block mb-1.5 font-medium">Voting Mode</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setMode('fcfs')}
-                    className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                    className={`flex-1 py-1.5 text-xs rounded-cg-md border transition-colors font-medium ${
                       mode === 'fcfs'
-                        ? 'bg-accent/20 border-accent text-accent'
-                        : 'bg-background border-border text-muted hover:border-accent/50'
+                        ? 'bg-accent/15 border-accent/40 text-accent-light'
+                        : 'bg-surface border-border text-muted hover:border-border-strong'
                     }`}
                   >
                     First Come First Serve
@@ -285,27 +285,26 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => { setMode('balanced'); setContinuous(false) }}
-                    className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                    className={`flex-1 py-1.5 text-xs rounded-cg-md border transition-colors font-medium ${
                       mode === 'balanced'
-                        ? 'bg-accent/20 border-accent text-accent'
-                        : 'bg-background border-border text-muted hover:border-accent/50'
+                        ? 'bg-accent/15 border-accent/40 text-accent-light'
+                        : 'bg-surface border-border text-muted hover:border-border-strong'
                     }`}
                   >
                     All at Once
                   </button>
                 </div>
-                <p className="text-xs text-muted mt-1">
+                <p className="text-xs text-muted mt-1.5 leading-relaxed">
                   {mode === 'fcfs'
                     ? 'Anyone can vote as soon as they arrive. Cells fill one at a time.'
-                    : 'Waits for enough participants, then assigns everyone to cells at once. The creator starts voting manually.'}
+                    : 'Waits for enough participants, then assigns everyone to cells at once.'}
                 </p>
               </div>
 
-              {/* Continuous Flow — only for FCFS mode */}
               {mode === 'fcfs' && (
                 <div>
                   <div className="flex items-center justify-between">
-                    <label className="text-xs text-foreground block">Continuous Flow</label>
+                    <label className="text-xs text-foreground/80 font-medium">Continuous Flow</label>
                     <button
                       type="button"
                       onClick={() => setContinuous(!continuous)}
@@ -313,23 +312,22 @@ export default function Home() {
                         continuous ? 'bg-accent' : 'bg-border'
                       }`}
                     >
-                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${
                         continuous ? 'left-5' : 'left-0.5'
                       }`} />
                     </button>
                   </div>
-                  <p className="text-xs text-muted mt-1">
+                  <p className="text-xs text-muted mt-1.5 leading-relaxed">
                     {continuous
-                      ? 'Voting begins automatically once enough ideas are submitted. New ideas keep forming new voting cells even while voting is happening.'
-                      : 'All ideas are collected first. The creator manually starts voting when ready.'}
+                      ? 'Voting begins automatically once enough hearts are submitted.'
+                      : 'All hearts are collected first. Start voting manually.'}
                   </p>
                 </div>
               )}
 
-              {/* Unlimited Mode */}
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="text-xs text-foreground block">Unlimited Mode <span className="text-warning">experimental</span></label>
+                  <label className="text-xs text-foreground/80 font-medium">Unlimited Mode <span className="text-warning text-[10px]">experimental</span></label>
                   <button
                     type="button"
                     onClick={() => setMultipleIdeas(!multipleIdeas)}
@@ -337,60 +335,61 @@ export default function Home() {
                       multipleIdeas ? 'bg-warning' : 'bg-border'
                     }`}
                   >
-                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${
                       multipleIdeas ? 'left-5' : 'left-0.5'
                     }`} />
                   </button>
                 </div>
-                <p className="text-xs text-muted mt-1">
+                <p className="text-xs text-muted mt-1.5 leading-relaxed">
                   {multipleIdeas
-                    ? 'Multiple ideas and votes per person. More ideas = more cells = more participants needed to resolve.'
-                    : 'One idea and one vote per person per tier (default).'}
+                    ? 'Multiple hearts and votes per person.'
+                    : 'One heart and one vote per person per tier (default).'}
                 </p>
               </div>
 
-              {/* Idea Goal — only relevant with FCFS + continuous flow */}
               {continuous && mode === 'fcfs' && (
                 <div>
-                  <label className="text-xs text-foreground block mb-1">Ideas to start voting</label>
+                  <label className="text-xs text-foreground/80 block mb-1.5 font-medium">Hearts to start voting</label>
                   <div className="flex gap-2">
                     {[
                       { value: 0, label: 'Manual' },
-                      { value: 5, label: '5 Ideas' },
-                      { value: 10, label: '10 Ideas' },
+                      { value: 5, label: '5 Hearts' },
+                      { value: 10, label: '10 Hearts' },
                     ].map(opt => (
                       <button
                         key={opt.value}
                         type="button"
                         onClick={() => updateIdeaGoal(opt.value)}
-                        className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                        className={`flex-1 py-1.5 text-xs rounded-cg-md border transition-colors font-medium ${
                           ideaGoal === opt.value
-                            ? 'bg-accent/20 border-accent text-accent'
-                            : 'bg-background border-border text-muted hover:border-accent/50'
+                            ? 'bg-accent/15 border-accent/40 text-accent-light'
+                            : 'bg-surface border-border text-muted hover:border-border-strong'
                         }`}
                       >
                         {opt.label}
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-muted mt-1">
+                  <p className="text-xs text-muted mt-1.5 leading-relaxed">
                     {ideaGoal === 0
                       ? 'You start voting manually from the facilitator panel.'
-                      : `Voting starts automatically after ${ideaGoal} ideas. Every ${ideaGoal} new ideas creates another voting cell.`}
+                      : `Voting starts automatically after ${ideaGoal} hearts.`}
                   </p>
                 </div>
               )}
             </div>
           )}
-          {/* Seed Ideas */}
+
           <div className="mb-3">
-            <label className="text-xs text-foreground block mb-2">Seed Ideas {ideaGoal === 0 && <span className="text-muted">(optional)</span>}</label>
+            <label className="text-xs text-foreground/80 block mb-2 font-medium">
+              Seed Hearts {ideaGoal === 0 && <span className="text-muted font-normal">(optional)</span>}
+            </label>
             <div className="space-y-2">
               {ideas.map((idea, i) => (
                 <div key={i}>
                   <input
                     type="text"
-                    placeholder={ideaGoal === 0 ? `Idea ${i + 1} (optional)` : `Idea ${i + 1}`}
+                    placeholder={ideaGoal === 0 ? `Heart ${i + 1} (optional)` : `Heart ${i + 1}`}
                     value={idea}
                     onChange={(e) => {
                       const next = [...ideas]
@@ -403,7 +402,7 @@ export default function Home() {
                       })
                     }}
                     maxLength={500}
-                    className={`w-full px-3 py-1.5 bg-background border rounded-lg text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent ${
+                    className={`w-full px-3 py-1.5 bg-background border rounded-cg-md text-sm text-foreground placeholder-muted/50 focus:outline-none focus:border-accent transition-colors ${
                       ideaStatus[i]?.ok === false ? 'border-error' : ideaStatus[i]?.ok ? 'border-success' : 'border-border'
                     }`}
                   />
@@ -413,49 +412,51 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted mt-1">
-              Pre-fill ideas to kick things off. Others can add more after creation.
+            <p className="text-xs text-muted mt-1.5">
+              Pre-fill hearts to kick things off. Others can add more after creation.
             </p>
           </div>
 
           {createError && <p className="text-error text-xs mb-2">{createError}</p>}
-          {createProgress && <p className="text-accent text-xs mb-2 animate-pulse">{createProgress}</p>}
+          {createProgress && <p className="text-accent-light text-xs mb-2 animate-pulse">{createProgress}</p>}
           <button
             type="submit"
             disabled={creating || !question.trim()}
-            className="w-full py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm rounded-lg transition-colors"
+            className="w-full py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-cg transition-colors shadow-cg-sm"
           >
             {creating ? 'Creating...' : 'Create Chant'}
           </button>
         </form>
       )}
 
-      {/* Chant List — hidden when create form is open */}
+      {/* Chant List */}
       {showCreate ? null : loadingChants && chants.length === 0 ? (
-        <div className="text-center text-muted py-8 animate-pulse">Loading chants...</div>
+        <div className="text-center text-muted py-8 animate-pulse text-sm relative z-10">Loading chants...</div>
       ) : chants.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted mb-2">No chants yet in this community.</p>
-          <p className="text-sm text-muted">Start one to get the conversation going!</p>
+        <div className="text-center py-12 relative z-10">
+          <p className="text-muted mb-2 text-sm">No chants yet in this community.</p>
+          <p className="text-xs text-muted">Start one to get the conversation going!</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5 relative z-10">
           {chants.map((chant) => (
             <Link
               key={chant.id}
               href={`/chant/${chant.id}${uidParam}`}
-              className="block p-4 bg-surface hover:bg-surface-hover border border-border rounded-lg transition-colors"
+              className="block p-3.5 bg-surface/90 hover:bg-surface-hover/90 border border-border rounded-cg transition-all shadow-cg-sm hover:shadow-cg-md backdrop-blur-sm"
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-sm font-medium text-foreground leading-tight">{chant.question}</h3>
                 <PhaseBadge phase={chant.phase} />
               </div>
               {chant.description && (
-                <p className="text-xs text-muted mt-1 line-clamp-2">{chant.description}</p>
+                <p className="text-xs text-muted mt-1.5 line-clamp-2 leading-relaxed">{chant.description}</p>
               )}
               <div className="flex items-center gap-3 mt-2 text-xs text-muted">
-                <span>{chant._count.ideas} ideas</span>
+                <span>{chant._count.ideas} hearts</span>
+                <span className="text-border-strong">&middot;</span>
                 <span>{chant._count.members} members</span>
+                <span className="text-border-strong">&middot;</span>
                 <span>by {chant.creator.name}</span>
               </div>
             </Link>
@@ -470,16 +471,17 @@ export default function Home() {
 
 function PhaseBadge({ phase }: { phase: string }) {
   const config: Record<string, { label: string; color: string }> = {
-    SUBMISSION: { label: 'Ideas', color: 'bg-accent/20 text-accent' },
-    VOTING: { label: 'Voting', color: 'bg-warning/20 text-warning' },
-    COMPLETED: { label: 'Done', color: 'bg-success/20 text-success' },
-    ACCUMULATING: { label: 'Rolling', color: 'bg-purple-500/20 text-purple-400' },
+    SUBMISSION: { label: 'Hearts', color: 'bg-accent/15 text-accent-light' },
+    VOTING: { label: 'Voting', color: 'bg-warning/15 text-warning' },
+    COMPLETED: { label: 'Done', color: 'bg-success/15 text-success' },
+    ACCUMULATING: { label: 'Rolling', color: 'bg-brand-400/15 text-brand-300' },
   }
-  const { label, color } = config[phase] || { label: phase, color: 'bg-muted/20 text-muted' }
+  const { label, color } = config[phase] || { label: phase, color: 'bg-muted/15 text-muted' }
 
   return (
-    <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${color}`}>
+    <span className={`px-2 py-0.5 text-[11px] rounded-full font-medium ${color}`}>
       {label}
     </span>
   )
 }
+
