@@ -258,7 +258,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
       </div>
 
       {/* Live Stats */}
-      <div className="mb-4 grid grid-cols-3 gap-2">
+      <div className="mb-4 grid grid-cols-4 gap-2">
         <div className="p-2.5 bg-surface rounded-lg border border-border text-center">
           <p className="text-lg font-mono font-bold text-foreground">{status.ideaCount}</p>
           <p className="text-xs text-muted">Ideas</p>
@@ -266,6 +266,10 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
         <div className="p-2.5 bg-surface rounded-lg border border-border text-center">
           <p className="text-lg font-mono font-bold text-foreground">{status.memberCount}</p>
           <p className="text-xs text-muted">Members</p>
+        </div>
+        <div className="p-2.5 bg-surface rounded-lg border border-border text-center">
+          <p className="text-lg font-mono font-bold text-foreground">{status.cells.reduce((sum, c) => sum + c._count.votes, 0)}</p>
+          <p className="text-xs text-muted">Votes</p>
         </div>
         <div className="p-2.5 bg-surface rounded-lg border border-border text-center">
           <p className="text-lg font-mono font-bold text-foreground">{status.currentTier}</p>
@@ -388,94 +392,70 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
           {actionError && <p className="text-error text-xs mb-2">{actionError}</p>}
           {actionSuccess && <p className="text-success text-xs mb-2">{actionSuccess}</p>}
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-3">
             {/* Start Voting — only in SUBMISSION */}
             {status.phase === 'SUBMISSION' && (
-              <button
-                onClick={handleStartVoting}
-                disabled={starting || status.ideaCount < 5}
-                title="Begin tier 1 voting. Ideas are grouped into cells of 5 and participants vote by allocating XP."
-                className="py-2 bg-warning hover:bg-warning/80 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-              >
-                {starting ? 'Starting...' : `Start Voting (${status.ideaCount} ideas)`}
-              </button>
+              <div>
+                <button
+                  onClick={handleStartVoting}
+                  disabled={starting || status.ideaCount < 5}
+                  title="Group ideas into cells of 5. Participants vote by allocating XP."
+                  className="w-full py-2 bg-warning hover:bg-warning/80 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  {starting ? 'Starting...' : `Start Voting (${status.ideaCount} ideas)`}
+                </button>
+                <p className="text-xs text-muted mt-1">Group ideas into cells of 5. Participants vote by allocating XP.</p>
+              </div>
             )}
 
-            {/* Close Submissions — VOTING + continuous flow */}
-            {status.phase === 'VOTING' && status.continuousFlow && (
-              <button
-                onClick={() => handleFacilitatorAction('close', 'Close & advance')}
-                disabled={actionLoading === 'close'}
-                title="Stop accepting new ideas and force-complete all open cells at the current tier. Winners advance to the next tier."
-                className="py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-              >
-                {actionLoading === 'close' ? '...' : 'Close & Advance'}
-              </button>
-            )}
-
-            {/* Advance Tier — VOTING */}
+            {/* Complete Tier — VOTING */}
             {status.phase === 'VOTING' && (
-              <button
-                onClick={() => handleFacilitatorAction('advance', 'Advance tier')}
-                disabled={actionLoading === 'advance'}
-                title="Force-complete all open cells and advance winning ideas to the next tier immediately."
-                className="py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-              >
-                {actionLoading === 'advance' ? '...' : 'Force Advance Tier'}
-              </button>
+              <div>
+                <button
+                  onClick={() => handleFacilitatorAction('close', 'Complete tier')}
+                  disabled={actionLoading === 'close'}
+                  title="Close submissions, create the last cell from remaining ideas, and finalize voting for this tier."
+                  className="w-full py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  {actionLoading === 'close' ? '...' : 'Complete Tier'}
+                </button>
+                <p className="text-xs text-muted mt-1">Close submissions and create the last cell from remaining ideas. Voting finishes naturally at tier {status.currentTier}.</p>
+              </div>
             )}
 
             {/* Extend Timer — VOTING, only for timed (non-continuous) mode */}
             {status.phase === 'VOTING' && !status.continuousFlow && (
-              <button
-                onClick={() => handleFacilitatorAction('extend', 'Extend timer')}
-                disabled={actionLoading === 'extend'}
-                title="Add 15 minutes to the voting timer for all active cells."
-                className="py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-              >
-                {actionLoading === 'extend' ? '...' : 'Extend +15min'}
-              </button>
+              <div>
+                <button
+                  onClick={() => handleFacilitatorAction('extend', 'Extend timer')}
+                  disabled={actionLoading === 'extend'}
+                  title="Add 15 minutes to the voting timer for all active cells."
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  {actionLoading === 'extend' ? '...' : 'Extend +15min'}
+                </button>
+                <p className="text-xs text-muted mt-1">Add 15 minutes to the voting timer for all active cells.</p>
+              </div>
             )}
 
             {/* Reopen — VOTING or ACCUMULATING */}
             {(status.phase === 'VOTING' || status.phase === 'ACCUMULATING') && (
-              <button
-                onClick={() => handleFacilitatorAction('reopen', 'Reopen')}
-                disabled={actionLoading === 'reopen'}
-                title="Reopen idea submissions. Pauses voting and lets participants submit new ideas."
-                className="py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-              >
-                {actionLoading === 'reopen' ? '...' : 'Reopen for Ideas'}
-              </button>
+              <div>
+                <button
+                  onClick={() => handleFacilitatorAction('reopen', 'Reopen')}
+                  disabled={actionLoading === 'reopen'}
+                  title="Reset to submission phase. All current cells and votes are preserved."
+                  className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  {actionLoading === 'reopen' ? '...' : 'Reopen for Ideas'}
+                </button>
+                <p className="text-xs text-muted mt-1">
+                  {status.continuousFlow
+                    ? 'Pause voting and return to submission phase. Use this to collect a batch of new ideas before resuming.'
+                    : 'Pause voting and reopen idea submissions.'}
+                </p>
+              </div>
             )}
-
-            {/* End Chant — any non-completed phase */}
-            <button
-              onClick={() => {
-                if (confirm('End this chant? This will force-complete all open cells and declare a winner.')) {
-                  handleFacilitatorAction('end', 'End chant')
-                }
-              }}
-              disabled={actionLoading === 'end'}
-              title="Force-complete all cells, tally votes, and declare a winner. Cannot be undone."
-              className="py-2 bg-error hover:bg-error/80 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-            >
-              {actionLoading === 'end' ? '...' : 'End Chant'}
-            </button>
-
-            {/* Delete — any phase */}
-            <button
-              onClick={() => {
-                if (confirm('Delete this chant permanently? This cannot be undone.')) {
-                  handleFacilitatorAction('delete', 'Delete chant')
-                }
-              }}
-              disabled={actionLoading === 'delete'}
-              title="Permanently delete this chant and all its ideas, votes, and cells."
-              className="py-2 bg-red-900 hover:bg-red-800 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-            >
-              {actionLoading === 'delete' ? '...' : 'Delete Chant'}
-            </button>
           </div>
 
           {startError && <p className="text-error text-xs mt-2">{startError}</p>}
