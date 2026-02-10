@@ -104,10 +104,11 @@ export default function Home() {
 
       // Auto-submit seeded ideas
       const filledIdeas = ideas.filter(t => t.trim())
+      let ideaErrors = 0
       for (let i = 0; i < filledIdeas.length; i++) {
         setCreateProgress(`Submitting idea ${i + 1}/${filledIdeas.length}...`)
         try {
-          await fetch(`/api/chants/${data.id}/ideas`, {
+          const ideaRes = await fetch(`/api/chants/${data.id}/ideas`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -117,9 +118,20 @@ export default function Home() {
               text: filledIdeas[i].trim(),
             }),
           })
+          const ideaData = await ideaRes.json()
+          if (!ideaRes.ok) {
+            console.error(`[UC] Idea ${i + 1} rejected:`, ideaData.error)
+            ideaErrors++
+          } else {
+            console.log(`[UC] Idea ${i + 1} created:`, ideaData.id)
+          }
         } catch (ideaErr) {
           console.error(`[UC] Failed to submit idea ${i + 1}:`, ideaErr)
+          ideaErrors++
         }
+      }
+      if (ideaErrors > 0) {
+        console.warn(`[UC] ${ideaErrors}/${filledIdeas.length} ideas failed to submit`)
       }
 
       setQuestion('')
