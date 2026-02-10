@@ -125,6 +125,7 @@ export default function Home() {
               cgUsername: user.name,
               cgImageUrl: user.imageUrl,
               text: ideas[idx].trim(),
+              creatorSeed: true,
             }),
           })
           const ideaData = await ideaRes.json()
