@@ -451,23 +451,35 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
               </div>
             )}
 
-            {/* Reopen — VOTING or ACCUMULATING, but not continuous flow past tier 1 */}
-            {(status.phase === 'VOTING' || status.phase === 'ACCUMULATING') && !(status.continuousFlow && status.currentTier > 1) && (
-              <div>
-                <button
-                  onClick={() => handleFacilitatorAction('reopen', 'Reopen')}
-                  disabled={actionLoading === 'reopen'}
-                  title="Reset to submission phase. All current cells and votes are preserved."
-                  className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
-                >
-                  {actionLoading === 'reopen' ? '...' : 'Reopen for Ideas'}
-                </button>
-                <p className="text-xs text-muted mt-1">
-                  {status.continuousFlow
-                    ? 'Pause voting and return to submission phase. Use this to collect a batch of new ideas before resuming.'
-                    : 'Pause voting and reopen idea submissions.'}
-                </p>
-              </div>
+            {/* Reopen — continuous flow: only when closed (toggles flag, voting continues). Non-CF: resets to SUBMISSION. */}
+            {status.continuousFlow ? (
+              status.phase === 'VOTING' && status.submissionsClosed && (
+                <div>
+                  <button
+                    onClick={() => handleFacilitatorAction('reopen', 'Reopen submissions')}
+                    disabled={actionLoading === 'reopen'}
+                    title="Reopen idea submissions. Voting continues at all tiers."
+                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                  >
+                    {actionLoading === 'reopen' ? '...' : 'Reopen Submissions'}
+                  </button>
+                  <p className="text-xs text-muted mt-1">Accept new ideas again. Voting continues at all tiers — new ideas enter at the bottom.</p>
+                </div>
+              )
+            ) : (
+              (status.phase === 'VOTING' || status.phase === 'ACCUMULATING') && (
+                <div>
+                  <button
+                    onClick={() => handleFacilitatorAction('reopen', 'Reopen')}
+                    disabled={actionLoading === 'reopen'}
+                    title="Reset to submission phase. All current cells and votes are preserved."
+                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+                  >
+                    {actionLoading === 'reopen' ? '...' : 'Reopen for Ideas'}
+                  </button>
+                  <p className="text-xs text-muted mt-1">Pause voting and reopen idea submissions.</p>
+                </div>
+              )
             )}
           </div>
 

@@ -19,6 +19,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(true)
   const [mode, setMode] = useState<'fcfs' | 'balanced'>('fcfs')
   const [continuous, setContinuous] = useState(true)
+  const [multipleIdeas, setMultipleIdeas] = useState(false)
   const [ideaGoal, setIdeaGoal] = useState(5)
   const [ideas, setIdeas] = useState<string[]>(['', '', '', '', ''])
   const [ideaStatus, setIdeaStatus] = useState<Record<number, { ok: boolean; msg: string }>>({})
@@ -85,6 +86,7 @@ export default function Home() {
       description: description.trim() || undefined,
       allocationMode: mode,
       continuousFlow: continuous,
+      multipleIdeasAllowed: multipleIdeas,
       ideaGoal,
     }
     debugLog('Creating chant', payload)
@@ -307,6 +309,29 @@ export default function Home() {
                   </p>
                 </div>
               )}
+
+              {/* Unlimited Mode */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-foreground block">Unlimited Mode <span className="text-warning">experimental</span></label>
+                  <button
+                    type="button"
+                    onClick={() => setMultipleIdeas(!multipleIdeas)}
+                    className={`w-10 h-5 rounded-full transition-colors relative ${
+                      multipleIdeas ? 'bg-warning' : 'bg-border'
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                      multipleIdeas ? 'left-5' : 'left-0.5'
+                    }`} />
+                  </button>
+                </div>
+                <p className="text-xs text-muted mt-1">
+                  {multipleIdeas
+                    ? 'Multiple ideas and votes per person. More ideas = more cells = more participants needed to resolve.'
+                    : 'One idea and one vote per person per tier (default).'}
+                </p>
+              </div>
 
               {/* Idea Goal — only relevant with FCFS + continuous flow */}
               {continuous && mode === 'fcfs' && (
