@@ -5,6 +5,7 @@ import { Chant } from '@/lib/types'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { debugLog, debugError } from '@/lib/debug'
 
 export default function Home() {
   const { user, community, loading, error, retry } = useCG()
@@ -86,7 +87,7 @@ export default function Home() {
       continuousFlow: continuous,
       ideaGoal,
     }
-    console.log('[UC] Creating chant:', payload)
+    debugLog('Creating chant', payload)
 
     try {
       setCreateProgress('Creating chant...')
@@ -97,7 +98,7 @@ export default function Home() {
       })
 
       const data = await res.json()
-      console.log('[UC] Create response:', res.status, data)
+      debugLog('Create response', { status: res.status, id: data.id, error: data.error })
 
       if (!res.ok) {
         throw new Error(data.error || `Failed to create (${res.status})`)
@@ -107,8 +108,8 @@ export default function Home() {
       setIdeaStatus({})
       let ideaSuccesses = 0
       let ideaFailures = 0
-      // Map filled idea indices back to original array indices
       const filledIndices = ideas.map((t, i) => t.trim() ? i : -1).filter(i => i >= 0)
+      debugLog('Submitting ideas', { count: filledIndices.length, chantId: data.id })
 
       for (let fi = 0; fi < filledIndices.length; fi++) {
         const idx = filledIndices[fi]
@@ -127,23 +128,24 @@ export default function Home() {
           const ideaData = await ideaRes.json()
           if (!ideaRes.ok) {
             const reason = ideaData.error || `HTTP ${ideaRes.status}`
-            console.error(`[UC] Idea ${fi + 1} rejected:`, reason)
+            debugError(`Idea ${fi + 1} rejected`, { reason, status: ideaRes.status })
             setIdeaStatus(prev => ({ ...prev, [idx]: { ok: false, msg: reason } }))
             ideaFailures++
           } else {
-            console.log(`[UC] Idea ${fi + 1} created:`, ideaData.id)
+            debugLog(`Idea ${fi + 1} created`, { id: ideaData.id })
             setIdeaStatus(prev => ({ ...prev, [idx]: { ok: true, msg: 'Submitted' } }))
             ideaSuccesses++
           }
         } catch (ideaErr) {
           const reason = ideaErr instanceof Error ? ideaErr.message : String(ideaErr)
-          console.error(`[UC] Failed to submit idea ${fi + 1}:`, reason)
+          debugError(`Idea ${fi + 1} network error`, { reason })
           setIdeaStatus(prev => ({ ...prev, [idx]: { ok: false, msg: reason } }))
           ideaFailures++
         }
       }
 
       setCreateProgress('')
+      debugLog('Ideas done', { successes: ideaSuccesses, failures: ideaFailures })
 
       if (ideaFailures > 0 && ideaSuccesses === 0 && filledIndices.length > 0) {
         setCreateError(`Chant created but all ideas failed. See errors below.`)
@@ -159,8 +161,8 @@ export default function Home() {
       fetchChants()
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      console.error('[UC] Create error:', msg, err)
-      setCreateError(msg || 'Unknown error — check browser console for [UC] logs')
+      debugError('Create failed', { error: msg })
+      setCreateError(msg || 'Unknown error')
       setCreateProgress('')
     } finally {
       setCreating(false)

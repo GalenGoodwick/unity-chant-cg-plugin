@@ -3,6 +3,7 @@
 import { CgPluginLib, CommunityInfoResponsePayload, UserInfoResponsePayload } from '@common-ground-dao/cg-plugin-lib'
 import { useSearchParams } from 'next/navigation'
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { debugLog, debugError } from '@/lib/debug'
 
 const publicKey = (process.env.NEXT_PUBLIC_PUBKEY || '').replace(/\\n/g, '\n')
 
@@ -44,22 +45,22 @@ export default function CGProvider({ children }: { children: React.ReactNode }) 
     setError(null)
 
     try {
-      console.log('[UC] Step 1: CgPluginLib.initialize...')
+      debugLog('Step 1: CgPluginLib.initialize...', { iframeUid })
       const lib = await CgPluginLib.initialize(iframeUid, '/api/sign', publicKey)
-      console.log('[UC] Step 1 OK: SDK initialized')
+      debugLog('Step 1 OK: SDK initialized')
 
-      console.log('[UC] Step 2: getUserInfo...')
+      debugLog('Step 2: getUserInfo...')
       const userRes = await lib.getUserInfo()
-      console.log('[UC] Step 2 OK: user =', userRes.data?.name)
+      debugLog('Step 2 OK: user', { id: userRes.data?.id, name: userRes.data?.name })
       setUser(userRes.data)
 
-      console.log('[UC] Step 3: getCommunityInfo...')
+      debugLog('Step 3: getCommunityInfo...')
       const communityRes = await lib.getCommunityInfo()
-      console.log('[UC] Step 3 OK: community =', communityRes.data?.title)
+      debugLog('Step 3 OK: community', { id: communityRes.data?.id, title: communityRes.data?.title })
       setCommunity(communityRes.data)
     } catch (err) {
-      console.error('[UC] CG error:', err)
       const msg = err instanceof Error ? err.message : String(err)
+      debugError('CG SDK init failed', { error: msg })
       setError(msg || 'Unknown CG SDK error')
     } finally {
       setLoading(false)
