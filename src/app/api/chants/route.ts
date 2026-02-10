@@ -23,7 +23,14 @@ export async function GET(req: Request) {
 
 // POST /api/chants — create a chant
 export async function POST(req: Request) {
-  const body = await req.json()
+  let body: Record<string, unknown>
+  try {
+    body = await req.json()
+  } catch {
+    return Response.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  console.log('[CG Proxy] POST /api/chants', JSON.stringify(body))
 
   try {
     const data = await callUC({
@@ -31,8 +38,11 @@ export async function POST(req: Request) {
       path: '/chants',
       body,
     })
+    console.log('[CG Proxy] Create success:', JSON.stringify(data))
     return Response.json(data, { status: 201 })
   } catch (err) {
-    return Response.json({ error: (err as Error).message }, { status: 400 })
+    const msg = (err as Error).message || 'Unknown error'
+    console.error('[CG Proxy] Create failed:', msg)
+    return Response.json({ error: msg }, { status: 502 })
   }
 }

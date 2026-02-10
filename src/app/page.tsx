@@ -93,8 +93,9 @@ export default function Home() {
       setShowCreate(false)
       fetchChants()
     } catch (err) {
-      console.error('[UC] Create error:', err)
-      setCreateError((err as Error).message)
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[UC] Create error:', msg, err)
+      setCreateError(msg || 'Unknown error — check browser console for [UC] logs')
     } finally {
       setCreating(false)
     }
@@ -204,13 +205,13 @@ export default function Home() {
                         : 'bg-background border-border text-muted hover:border-accent/50'
                     }`}
                   >
-                    Balanced
+                    All at Once
                   </button>
                 </div>
                 <p className="text-xs text-muted mt-1">
                   {mode === 'fcfs'
                     ? 'Anyone can vote as soon as they arrive. Cells fill one at a time.'
-                    : 'Waits for enough participants, then assigns everyone to cells at once.'}
+                    : 'Waits for enough participants, then assigns everyone to cells at once. The creator starts voting manually.'}
                 </p>
               </div>
 
@@ -237,24 +238,20 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Idea Goal — only relevant with continuous flow */}
-              {continuous && (
+              {/* Idea Goal — only relevant with FCFS + continuous flow */}
+              {continuous && mode === 'fcfs' && (
                 <div>
                   <label className="text-xs text-foreground block mb-1">
-                    Ideas to start voting: <span className="font-mono">{ideaGoal}</span>
+                    Ideas to start voting
                   </label>
                   <input
-                    type="range"
+                    type="number"
                     min={2}
                     max={50}
                     value={ideaGoal}
-                    onChange={(e) => setIdeaGoal(parseInt(e.target.value))}
-                    className="w-full"
+                    onChange={(e) => setIdeaGoal(Math.max(2, Math.min(50, parseInt(e.target.value) || 5)))}
+                    className="w-20 px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground font-mono focus:outline-none focus:border-accent"
                   />
-                  <div className="flex justify-between text-xs text-muted">
-                    <span>2</span>
-                    <span>50</span>
-                  </div>
                   <p className="text-xs text-muted mt-1">
                     Voting starts automatically after this many ideas are submitted. Every {ideaGoal} new ideas creates another voting cell.
                   </p>

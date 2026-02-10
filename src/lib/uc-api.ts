@@ -31,10 +31,18 @@ export async function callUC<T = unknown>({ method, path, body, params }: UCRequ
     cache: 'no-store',
   })
 
-  const data = await res.json()
+  const text = await res.text()
+  let data: Record<string, unknown>
+  try {
+    data = JSON.parse(text)
+  } catch {
+    throw new Error(`UC API returned non-JSON (${res.status}): ${text.slice(0, 200)}`)
+  }
 
   if (!res.ok) {
-    throw new Error(data.error || `UC API error: ${res.status}`)
+    const errMsg = (data.error as string) || `UC API error: ${res.status}`
+    console.error(`[UC API] ${method} ${path} → ${res.status}:`, errMsg)
+    throw new Error(errMsg)
   }
 
   return data as T
