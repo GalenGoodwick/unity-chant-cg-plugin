@@ -20,6 +20,7 @@ export default function Home() {
   const [continuous, setContinuous] = useState(true)
   const [ideaGoal, setIdeaGoal] = useState(5)
   const [ideas, setIdeas] = useState<string[]>(['', '', '', '', ''])
+  const [ideaStatus, setIdeaStatus] = useState<Record<number, { ok: boolean; msg: string }>>({})
   const [createProgress, setCreateProgress] = useState('')
   const searchParams = useSearchParams()
 
@@ -103,10 +104,15 @@ export default function Home() {
       }
 
       // Auto-submit seeded ideas
-      const filledIdeas = ideas.filter(t => t.trim())
-      let ideaErrors = 0
-      for (let i = 0; i < filledIdeas.length; i++) {
-        setCreateProgress(`Submitting idea ${i + 1}/${filledIdeas.length}...`)
+      setIdeaStatus({})
+      let ideaSuccesses = 0
+      let ideaFailures = 0
+      // Map filled idea indices back to original array indices
+      const filledIndices = ideas.map((t, i) => t.trim() ? i : -1).filter(i => i >= 0)
+
+      for (let fi = 0; fi < filledIndices.length; fi++) {
+        const idx = filledIndices[fi]
+        setCreateProgress(`Submitting idea ${fi + 1}/${filledIndices.length}...`)
         try {
           const ideaRes = await fetch(`/api/chants/${data.id}/ideas`, {
             method: 'POST',
@@ -115,30 +121,41 @@ export default function Home() {
               cgUserId: user.id,
               cgUsername: user.name,
               cgImageUrl: user.imageUrl,
-              text: filledIdeas[i].trim(),
+              text: ideas[idx].trim(),
             }),
           })
           const ideaData = await ideaRes.json()
           if (!ideaRes.ok) {
-            console.error(`[UC] Idea ${i + 1} rejected:`, ideaData.error)
-            ideaErrors++
+            const reason = ideaData.error || `HTTP ${ideaRes.status}`
+            console.error(`[UC] Idea ${fi + 1} rejected:`, reason)
+            setIdeaStatus(prev => ({ ...prev, [idx]: { ok: false, msg: reason } }))
+            ideaFailures++
           } else {
-            console.log(`[UC] Idea ${i + 1} created:`, ideaData.id)
+            console.log(`[UC] Idea ${fi + 1} created:`, ideaData.id)
+            setIdeaStatus(prev => ({ ...prev, [idx]: { ok: true, msg: 'Submitted' } }))
+            ideaSuccesses++
           }
         } catch (ideaErr) {
-          console.error(`[UC] Failed to submit idea ${i + 1}:`, ideaErr)
-          ideaErrors++
+          const reason = ideaErr instanceof Error ? ideaErr.message : String(ideaErr)
+          console.error(`[UC] Failed to submit idea ${fi + 1}:`, reason)
+          setIdeaStatus(prev => ({ ...prev, [idx]: { ok: false, msg: reason } }))
+          ideaFailures++
         }
       }
-      if (ideaErrors > 0) {
-        console.warn(`[UC] ${ideaErrors}/${filledIdeas.length} ideas failed to submit`)
+
+      setCreateProgress('')
+
+      if (ideaFailures > 0 && ideaSuccesses === 0 && filledIndices.length > 0) {
+        setCreateError(`Chant created but all ideas failed. See errors below.`)
+        fetchChants()
+        return
       }
 
       setQuestion('')
       setDescription('')
       setIdeas(['', '', '', '', ''])
+      setIdeaStatus({})
       setShowCreate(false)
-      setCreateProgress('')
       fetchChants()
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -325,19 +342,30 @@ export default function Home() {
             <label className="text-xs text-foreground block mb-2">Seed Ideas {ideaGoal === 0 && <span className="text-muted">(optional)</span>}</label>
             <div className="space-y-2">
               {ideas.map((idea, i) => (
-                <input
-                  key={i}
-                  type="text"
-                  placeholder={ideaGoal === 0 ? `Idea ${i + 1} (optional)` : `Idea ${i + 1}`}
-                  value={idea}
-                  onChange={(e) => {
-                    const next = [...ideas]
-                    next[i] = e.target.value
-                    setIdeas(next)
-                  }}
-                  maxLength={500}
-                  className="w-full px-3 py-1.5 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent"
-                />
+                <div key={i}>
+                  <input
+                    type="text"
+                    placeholder={ideaGoal === 0 ? `Idea ${i + 1} (optional)` : `Idea ${i + 1}`}
+                    value={idea}
+                    onChange={(e) => {
+                      const next = [...ideas]
+                      next[i] = e.target.value
+                      setIdeas(next)
+                      setIdeaStatus(prev => {
+                        const copy = { ...prev }
+                        delete copy[i]
+                        return copy
+                      })
+                    }}
+                    maxLength={500}
+                    className={`w-full px-3 py-1.5 bg-background border rounded-lg text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent ${
+                      ideaStatus[i]?.ok === false ? 'border-error' : ideaStatus[i]?.ok ? 'border-success' : 'border-border'
+                    }`}
+                  />
+                  {ideaStatus[i] && !ideaStatus[i].ok && (
+                    <p className="text-error text-xs mt-0.5">{ideaStatus[i].msg}</p>
+                  )}
+                </div>
               ))}
             </div>
             <p className="text-xs text-muted mt-1">

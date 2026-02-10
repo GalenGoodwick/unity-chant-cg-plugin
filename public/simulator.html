@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CG Simulator — Unity Chant Plugin Test</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, sans-serif; background: #111; color: #eee; display: flex; height: 100vh; }
+  #sidebar { width: 360px; min-width: 360px; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; }
+  #sidebar h1 { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #333; color: #0891b2; }
+  #config { padding: 12px 16px; border-bottom: 1px solid #333; }
+  #config label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; }
+  #config input { width: 100%; padding: 6px 8px; background: #222; border: 1px solid #444; border-radius: 4px; color: #eee; font-size: 12px; margin-bottom: 8px; }
+  #config button { padding: 6px 12px; background: #0891b2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+  #config button:hover { background: #0e7490; }
+  #log-header { padding: 8px 16px; font-size: 11px; color: #888; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+  #log-header button { background: none; border: 1px solid #555; color: #888; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 10px; }
+  #log { flex: 1; overflow-y: auto; padding: 8px; font-size: 11px; font-family: 'SF Mono', 'Menlo', monospace; }
+  .log-entry { padding: 4px 8px; border-radius: 3px; margin-bottom: 2px; word-break: break-all; }
+  .log-recv { background: #1a2a1a; color: #4ade80; }
+  .log-send { background: #1a1a2a; color: #60a5fa; }
+  .log-info { background: #2a2a1a; color: #fbbf24; }
+  .log-error { background: #2a1a1a; color: #f87171; }
+  #iframe-container { flex: 1; display: flex; flex-direction: column; }
+  #iframe-bar { padding: 8px 16px; font-size: 11px; color: #888; border-bottom: 1px solid #333; background: #1a1a1a; }
+  iframe { flex: 1; border: none; background: #0a0a0a; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h1>CG Simulator</h1>
+  <div id="config">
+    <label>Plugin URL</label>
+    <input id="pluginUrl" value="http://localhost:5001" />
+    <label>Mock User ID</label>
+    <input id="mockUserId" value="sim-user-001" />
+    <label>Mock Username</label>
+    <input id="mockUsername" value="SimulatorUser" />
+    <label>Mock Community ID</label>
+    <input id="mockCommunityId" value="sim-community-001" />
+    <label>Mock Community Name</label>
+    <input id="mockCommunityName" value="Test Community" />
+    <button onclick="loadPlugin()">Load Plugin</button>
+  </div>
+  <div id="log-header">
+    <span>Message Log</span>
+    <button onclick="document.getElementById('log').innerHTML=''">Clear</button>
+  </div>
+  <div id="log"></div>
+</div>
+
+<div id="iframe-container">
+  <div id="iframe-bar">Plugin not loaded</div>
+  <iframe id="plugin-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+</div>
+
+<script>
+const log = document.getElementById('log');
+const iframe = document.getElementById('plugin-iframe');
+const bar = document.getElementById('iframe-bar');
+
+function addLog(type, msg, detail) {
+  const entry = document.createElement('div');
+  entry.className = `log-entry log-${type}`;
+  const prefix = type === 'recv' ? '← RECV' : type === 'send' ? '→ SEND' : type === 'error' ? '✗ ERR' : 'ℹ INFO';
+  entry.textContent = `${prefix}: ${msg}`;
+  if (detail) {
+    const detailEl = document.createElement('div');
+    detailEl.style.cssText = 'margin-top:2px;opacity:0.7;font-size:10px;';
+    detailEl.textContent = typeof detail === 'string' ? detail : JSON.stringify(detail, null, 2);
+    entry.appendChild(detailEl);
+  }
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function getConfig() {
+  return {
+    userId: document.getElementById('mockUserId').value,
+    username: document.getElementById('mockUsername').value,
+    communityId: document.getElementById('mockCommunityId').value,
+    communityName: document.getElementById('mockCommunityName').value,
+  };
+}
+
+function loadPlugin() {
+  const baseUrl = document.getElementById('pluginUrl').value.replace(/\/$/, '');
+  const uid = 'cg-sim-' + Date.now();
+  const url = `${baseUrl}?iframeUid=${uid}`;
+  iframe.src = url;
+  bar.textContent = `Loaded: ${url}`;
+  addLog('info', `Loading plugin with iframeUid=${uid}`, url);
+}
+
+// Listen for postMessage from the iframe
+window.addEventListener('message', (event) => {
+  // Only handle messages from the plugin iframe
+  if (event.source !== iframe.contentWindow) return;
+
+  const data = event.data;
+  if (!data || !data.request) {
+    addLog('recv', 'Unknown message format', JSON.stringify(data).slice(0, 200));
+    return;
+  }
+
+  let request;
+  try {
+    request = JSON.parse(data.request);
+  } catch (e) {
+    addLog('error', 'Failed to parse request', data.request);
+    return;
+  }
+
+  const requestId = request.requestId;
+  const config = getConfig();
+
+  // Handle safeRequest (init)
+  if (request.type === 'safeRequest') {
+    const innerType = request.data?.type;
+    addLog('recv', `safeRequest: ${innerType}`, request);
+
+    if (innerType === 'init') {
+      const response = {
+        type: requestId,
+        payload: {
+          response: JSON.stringify({
+            data: {
+              pluginId: 'sim-plugin-001',
+              userId: config.userId,
+            }
+          }),
+          // No signature — plugin handles missing signature gracefully
+        }
+      };
+      addLog('send', `init response → pluginId=sim-plugin-001, userId=${config.userId}`);
+      iframe.contentWindow.postMessage(response, '*');
+    }
+    return;
+  }
+
+  // Handle signed requests (userInfo, communityInfo, etc.)
+  // The request has been signed by the plugin's /api/sign endpoint
+  // We need to read the inner type
+  const innerType = request.data?.type;
+  addLog('recv', `signed request: ${innerType}`, { requestId, type: innerType, iframeUid: request.iframeUid });
+
+  if (innerType === 'userInfo') {
+    const response = {
+      type: requestId,
+      payload: {
+        response: JSON.stringify({
+          data: {
+            id: config.userId,
+            name: config.username,
+            roles: ['member'],
+            imageUrl: '',
+          }
+        }),
+        // No signature for simulator
+      }
+    };
+    addLog('send', `userInfo response → ${config.username} (${config.userId})`);
+    iframe.contentWindow.postMessage(response, '*');
+  }
+  else if (innerType === 'communityInfo') {
+    const response = {
+      type: requestId,
+      payload: {
+        response: JSON.stringify({
+          data: {
+            id: config.communityId,
+            title: config.communityName,
+            roles: [
+              { id: 'role-member', title: 'Member', type: 'default', permissions: ['read', 'write'], assignmentRules: { type: 'free' } }
+            ],
+          }
+        }),
+      }
+    };
+    addLog('send', `communityInfo response → ${config.communityName} (${config.communityId})`);
+    iframe.contentWindow.postMessage(response, '*');
+  }
+  else if (innerType === 'userFriends') {
+    const response = {
+      type: requestId,
+      payload: {
+        response: JSON.stringify({
+          data: {
+            friends: []
+          }
+        }),
+      }
+    };
+    addLog('send', 'userFriends response → []');
+    iframe.contentWindow.postMessage(response, '*');
+  }
+  else {
+    addLog('error', `Unknown request type: ${innerType}`, request);
+  }
+});
+
+// Auto-load on page open
+window.addEventListener('DOMContentLoaded', () => {
+  addLog('info', 'CG Simulator ready. Click "Load Plugin" or edit config.');
+});
+</script>
+</body>
+</html>

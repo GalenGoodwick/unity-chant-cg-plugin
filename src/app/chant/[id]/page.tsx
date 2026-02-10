@@ -394,6 +394,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
               <button
                 onClick={handleStartVoting}
                 disabled={starting || status.ideaCount < 5}
+                title="Begin tier 1 voting. Ideas are grouped into cells of 5 and participants vote by allocating XP."
                 className="py-2 bg-warning hover:bg-warning/80 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
               >
                 {starting ? 'Starting...' : `Start Voting (${status.ideaCount} ideas)`}
@@ -405,6 +406,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
               <button
                 onClick={() => handleFacilitatorAction('close', 'Close & advance')}
                 disabled={actionLoading === 'close'}
+                title="Stop accepting new ideas and force-complete all open cells at the current tier. Winners advance to the next tier."
                 className="py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
               >
                 {actionLoading === 'close' ? '...' : 'Close & Advance'}
@@ -416,17 +418,19 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
               <button
                 onClick={() => handleFacilitatorAction('advance', 'Advance tier')}
                 disabled={actionLoading === 'advance'}
+                title="Force-complete all open cells and advance winning ideas to the next tier immediately."
                 className="py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
               >
                 {actionLoading === 'advance' ? '...' : 'Force Advance Tier'}
               </button>
             )}
 
-            {/* Extend Timer — VOTING */}
-            {status.phase === 'VOTING' && (
+            {/* Extend Timer — VOTING, only for timed (non-continuous) mode */}
+            {status.phase === 'VOTING' && !status.continuousFlow && (
               <button
                 onClick={() => handleFacilitatorAction('extend', 'Extend timer')}
                 disabled={actionLoading === 'extend'}
+                title="Add 15 minutes to the voting timer for all active cells."
                 className="py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
               >
                 {actionLoading === 'extend' ? '...' : 'Extend +15min'}
@@ -438,6 +442,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
               <button
                 onClick={() => handleFacilitatorAction('reopen', 'Reopen')}
                 disabled={actionLoading === 'reopen'}
+                title="Reopen idea submissions. Pauses voting and lets participants submit new ideas."
                 className="py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
               >
                 {actionLoading === 'reopen' ? '...' : 'Reopen for Ideas'}
@@ -452,6 +457,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
                 }
               }}
               disabled={actionLoading === 'end'}
+              title="Force-complete all cells, tally votes, and declare a winner. Cannot be undone."
               className="py-2 bg-error hover:bg-error/80 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
             >
               {actionLoading === 'end' ? '...' : 'End Chant'}
@@ -465,6 +471,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
                 }
               }}
               disabled={actionLoading === 'delete'}
+              title="Permanently delete this chant and all its ideas, votes, and cells."
               className="py-2 bg-red-900 hover:bg-red-800 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
             >
               {actionLoading === 'delete' ? '...' : 'Delete Chant'}
