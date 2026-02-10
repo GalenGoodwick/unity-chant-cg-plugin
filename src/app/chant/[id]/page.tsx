@@ -46,16 +46,14 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
       setStatus(data)
 
       // Initialize allocations for cell-specific ideas (FCFS) or all voting ideas
-      if (data.phase === 'VOTING' && !data.hasVoted) {
+      const canVote = data.phase === 'VOTING' && (!data.hasVoted || data.multipleIdeasAllowed)
+      if (canVote) {
         const cellIdeas = data.fcfsProgress?.currentCellIdeas
         const ideasForVoting = cellIdeas || data.ideas.filter((i: IdeaInfo) => i.status === 'IN_VOTING')
         if (ideasForVoting.length > 0) {
-          setAllocations(prev => {
-            if (Object.keys(prev).length > 0) return prev
-            const init: Record<string, number> = {}
-            ideasForVoting.forEach((i: { id: string }) => { init[i.id] = 0 })
-            return init
-          })
+          const init: Record<string, number> = {}
+          ideasForVoting.forEach((i: { id: string }) => { init[i.id] = 0 })
+          setAllocations(init)
         }
       }
     } catch (err) {
@@ -138,6 +136,14 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
 
       setVoteResult(data)
       fetchStatus()
+
+      // In unlimited mode, clear vote result after 3s so user can vote again
+      if (status?.multipleIdeasAllowed) {
+        setTimeout(() => {
+          setVoteResult(null)
+          fetchStatus()
+        }, 3000)
+      }
     } catch (err) {
       setVoteError((err as Error).message)
     } finally {
@@ -510,17 +516,17 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
               ))}
             </div>
           </div>
-          {status.hasVoted && !voteResult && (
+          {status.hasVoted && !status.multipleIdeasAllowed && !voteResult && (
             <p className="text-xs text-muted">Voted tier {status.currentTier} — waiting for other voters to finish.</p>
           )}
-          {!status.hasVoted && votingIdeas.length > 0 && (
+          {(!status.hasVoted || status.multipleIdeasAllowed) && votingIdeas.length > 0 && (
             <p className="text-xs text-warning">Tier {status.currentTier} vote available below.</p>
           )}
         </div>
       )}
 
       {/* Already voted (no history yet — tier 1 only) */}
-      {status.phase === 'VOTING' && status.hasVoted && !voteResult && (!status.votedTiers || status.votedTiers.length === 0) && (
+      {status.phase === 'VOTING' && status.hasVoted && !status.multipleIdeasAllowed && !voteResult && (!status.votedTiers || status.votedTiers.length === 0) && (
         <div className="mb-4 p-4 bg-success/10 border border-success/30 rounded-lg text-center">
           <p className="text-success font-semibold mb-1">You've already voted this tier</p>
           <p className="text-xs text-muted">Waiting for other voters to complete their cells.</p>
@@ -528,7 +534,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
       )}
 
       {/* VOTING PHASE: XP Allocation */}
-      {status.phase === 'VOTING' && !voteResult && !status.hasVoted && votingIdeas.length > 0 && (
+      {status.phase === 'VOTING' && !voteResult && (!status.hasVoted || status.multipleIdeasAllowed) && votingIdeas.length > 0 && (
         <div className="mb-4 p-4 bg-surface rounded-lg border border-border">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-sm font-semibold">Allocate 10 XP</h2>

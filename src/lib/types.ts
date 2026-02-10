@@ -32,6 +32,7 @@ export interface ChantStatus {
   phase: 'SUBMISSION' | 'VOTING' | 'COMPLETED' | 'ACCUMULATING'
   allocationMode: string
   continuousFlow: boolean
+  multipleIdeasAllowed: boolean
   submissionsClosed: boolean
   currentTier: number
   memberCount: number

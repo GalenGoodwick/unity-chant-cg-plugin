@@ -68,8 +68,8 @@ export default function Home() {
       setCreateError(`Missing context: user=${!!user}, community=${!!community}`)
       return
     }
-    if (!question.trim()) {
-      setCreateError('Question is required')
+    if (!question.trim() || question.trim().length < 2) {
+      setCreateError('Question must be at least 2 characters')
       return
     }
 
@@ -212,7 +212,22 @@ export default function Home() {
           <p className="text-xs text-muted">{community?.title}</p>
         </div>
         <button
-          onClick={() => setShowCreate(!showCreate)}
+          onClick={() => {
+            if (showCreate) {
+              // Reset form on cancel
+              setQuestion('')
+              setDescription('')
+              setCreateError('')
+              setCreateProgress('')
+              setIdeaStatus({})
+              setIdeas(['', '', '', '', ''])
+              setMode('fcfs')
+              setContinuous(true)
+              setMultipleIdeas(false)
+              setIdeaGoal(5)
+            }
+            setShowCreate(!showCreate)
+          }}
           className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-sm rounded-lg transition-colors"
         >
           {showCreate ? 'Cancel' : '+ New Chant'}
