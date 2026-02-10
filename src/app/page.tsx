@@ -15,6 +15,10 @@ export default function Home() {
   const [description, setDescription] = useState('')
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
+  const [mode, setMode] = useState<'fcfs' | 'balanced'>('fcfs')
+  const [continuous, setContinuous] = useState(true)
+  const [ideaGoal, setIdeaGoal] = useState(5)
   const searchParams = useSearchParams()
 
   const fetchChants = useCallback(async () => {
@@ -61,6 +65,9 @@ export default function Home() {
           cgCommunityName: community.title,
           question: question.trim(),
           description: description.trim() || undefined,
+          allocationMode: mode,
+          continuousFlow: continuous,
+          ideaGoal,
         }),
       })
 
@@ -145,8 +152,89 @@ export default function Home() {
             onChange={(e) => setDescription(e.target.value)}
             maxLength={500}
             rows={2}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted mb-3 focus:outline-none focus:border-accent resize-none"
+            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted mb-2 focus:outline-none focus:border-accent resize-none"
           />
+
+          {/* Settings toggle */}
+          <button
+            type="button"
+            onClick={() => setShowSettings(!showSettings)}
+            className="text-xs text-muted hover:text-foreground mb-2 flex items-center gap-1"
+          >
+            <span>{showSettings ? '▾' : '▸'}</span>
+            Settings
+          </button>
+
+          {showSettings && (
+            <div className="mb-3 p-3 bg-background rounded-lg border border-border space-y-3">
+              {/* Voting Mode */}
+              <div>
+                <label className="text-xs text-muted block mb-1">Voting Mode</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMode('fcfs')}
+                    className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                      mode === 'fcfs'
+                        ? 'bg-accent/20 border-accent text-accent'
+                        : 'bg-background border-border text-muted hover:border-accent/50'
+                    }`}
+                  >
+                    First Come First Serve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode('balanced')}
+                    className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                      mode === 'balanced'
+                        ? 'bg-accent/20 border-accent text-accent'
+                        : 'bg-background border-border text-muted hover:border-accent/50'
+                    }`}
+                  >
+                    Balanced
+                  </button>
+                </div>
+              </div>
+
+              {/* Continuous Flow */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-xs text-foreground block">Continuous Flow</label>
+                  <p className="text-xs text-muted">Voting starts as ideas come in</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setContinuous(!continuous)}
+                  className={`w-10 h-5 rounded-full transition-colors relative ${
+                    continuous ? 'bg-accent' : 'bg-border'
+                  }`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                    continuous ? 'left-5' : 'left-0.5'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Idea Goal */}
+              <div>
+                <label className="text-xs text-muted block mb-1">
+                  Ideas to start voting: <span className="text-foreground font-mono">{ideaGoal}</span>
+                </label>
+                <input
+                  type="range"
+                  min={2}
+                  max={50}
+                  value={ideaGoal}
+                  onChange={(e) => setIdeaGoal(parseInt(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted">
+                  <span>2</span>
+                  <span>50</span>
+                </div>
+              </div>
+            </div>
+          )}
           {createError && <p className="text-error text-xs mb-2">{createError}</p>}
           <button
             type="submit"

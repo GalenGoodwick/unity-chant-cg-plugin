@@ -32,21 +32,28 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
   const [starting, setStarting] = useState(false)
   const [startError, setStartError] = useState('')
 
+  // Facilitator controls
+  const [actionLoading, setActionLoading] = useState('')
+  const [actionError, setActionError] = useState('')
+  const [actionSuccess, setActionSuccess] = useState('')
+
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch(`/api/chants/${id}`)
+      const cgUserId = user?.id ? `?cgUserId=${user.id}` : ''
+      const res = await fetch(`/api/chants/${id}${cgUserId}`)
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
       setStatus(data)
 
-      // Initialize allocations for voting ideas
-      if (data.phase === 'VOTING' && data.ideas) {
-        const votingIdeas = data.ideas.filter((i: IdeaInfo) => i.status === 'IN_VOTING')
-        if (votingIdeas.length > 0) {
+      // Initialize allocations for cell-specific ideas (FCFS) or all voting ideas
+      if (data.phase === 'VOTING' && !data.hasVoted) {
+        const cellIdeas = data.fcfsProgress?.currentCellIdeas
+        const ideasForVoting = cellIdeas || data.ideas.filter((i: IdeaInfo) => i.status === 'IN_VOTING')
+        if (ideasForVoting.length > 0) {
           setAllocations(prev => {
             if (Object.keys(prev).length > 0) return prev
             const init: Record<string, number> = {}
-            votingIdeas.forEach((i: IdeaInfo) => { init[i.id] = 0 })
+            ideasForVoting.forEach((i: { id: string }) => { init[i.id] = 0 })
             return init
           })
         }
@@ -56,7 +63,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, user?.id])
 
   useEffect(() => {
     fetchStatus()
@@ -167,6 +174,39 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
     }
   }
 
+  const handleFacilitatorAction = async (action: string, label: string) => {
+    if (!user) return
+    setActionLoading(action)
+    setActionError('')
+    setActionSuccess('')
+
+    try {
+      const method = action === 'delete' ? 'DELETE' : 'POST'
+      const url = action === 'delete' ? `/api/chants/${id}` : `/api/chants/${id}/${action}`
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cgUserId: user.id,
+          cgUsername: user.name,
+          cgImageUrl: user.imageUrl,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Failed to ${label}`)
+
+      setActionSuccess(`${label} successful`)
+      fetchStatus()
+      setTimeout(() => setActionSuccess(''), 3000)
+    } catch (err) {
+      setActionError((err as Error).message)
+    } finally {
+      setActionLoading('')
+    }
+  }
+
   const updateAllocation = (ideaId: string, value: number) => {
     setAllocations(prev => ({ ...prev, [ideaId]: value }))
     setVoteError('')
@@ -191,7 +231,11 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
     )
   }
 
-  const votingIdeas = status.ideas.filter(i => i.status === 'IN_VOTING')
+  // Use cell-specific ideas if available, fall back to all IN_VOTING
+  const cellIdeas = status.fcfsProgress?.currentCellIdeas
+  const votingIdeas = cellIdeas
+    ? cellIdeas.map(ci => ({ ...ci, status: 'IN_VOTING', tier: status.currentTier, totalXP: 0, totalVotes: 0, isChampion: false, author: { ...ci.author, cgId: undefined } }))
+    : status.ideas.filter(i => i.status === 'IN_VOTING')
   const isCreator = user && status.creator.cgId === user.id
 
   return (
@@ -273,6 +317,9 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
           <p className="text-sm text-warning font-medium mb-1">How Voting Works</p>
           <p className="text-xs text-muted">Distribute <span className="text-foreground font-medium">10 XP</span> across the ideas below — give more to ideas you think are strongest.</p>
           <p className="text-xs text-muted mt-1">Votes happen in small cells of 5 people. Winning ideas advance to the next tier, where they compete again. This repeats until one priority emerges.</p>
+          {status.continuousFlow && (
+            <p className="text-xs text-accent mt-1">Ideas are still being accepted — new cells form automatically.</p>
+          )}
           <a
             href="https://unitychant.com/how-it-works"
             target="_blank"
@@ -298,8 +345,8 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
         </div>
       )}
 
-      {/* SUBMISSION PHASE: Ideas + Submit */}
-      {(status.phase === 'SUBMISSION' || status.phase === 'ACCUMULATING') && (
+      {/* Ideas Submission */}
+      {(status.phase === 'SUBMISSION' || status.phase === 'ACCUMULATING' || (status.phase === 'VOTING' && status.continuousFlow)) && (
         <>
           <form onSubmit={handleSubmitIdea} className="mb-4 p-3 bg-surface rounded-lg border border-border">
             <h2 className="text-sm font-semibold mb-2">Submit Your Idea</h2>
@@ -324,28 +371,120 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
             {submitSuccess && <p className="text-success text-xs mt-1">Idea submitted!</p>}
           </form>
 
-          {/* Creator Controls */}
-          {isCreator && status.phase === 'SUBMISSION' && (
-            <div className="mb-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
-              <p className="text-xs text-warning mb-2">
-                {status.ideaCount} idea{status.ideaCount !== 1 ? 's' : ''} submitted
-                {status.ideaCount < 5 && ' — need at least 5 to start voting'}
-              </p>
-              <button
-                onClick={handleStartVoting}
-                disabled={starting || status.ideaCount < 5}
-                className="w-full py-2 bg-warning hover:bg-warning/80 disabled:opacity-50 text-white text-sm rounded-lg transition-colors"
-              >
-                {starting ? 'Starting...' : 'Start Voting'}
-              </button>
-              {startError && <p className="text-error text-xs mt-1">{startError}</p>}
-            </div>
+          {/* Creator hint */}
+          {isCreator && status.phase === 'SUBMISSION' && status.ideaCount < 5 && (
+            <p className="text-xs text-warning mb-2 px-1">
+              {status.ideaCount} idea{status.ideaCount !== 1 ? 's' : ''} submitted — need at least 5 to start voting
+            </p>
           )}
         </>
       )}
 
+      {/* Facilitator Panel — visible to creator in any phase */}
+      {isCreator && status.phase !== 'COMPLETED' && (
+        <div className="mb-4 p-3 bg-surface rounded-lg border border-gold/30">
+          <h2 className="text-sm font-semibold text-gold mb-2">Facilitator Controls</h2>
+
+          {actionError && <p className="text-error text-xs mb-2">{actionError}</p>}
+          {actionSuccess && <p className="text-success text-xs mb-2">{actionSuccess}</p>}
+
+          <div className="grid grid-cols-2 gap-2">
+            {/* Start Voting — only in SUBMISSION */}
+            {status.phase === 'SUBMISSION' && (
+              <button
+                onClick={handleStartVoting}
+                disabled={starting || status.ideaCount < 5}
+                className="py-2 bg-warning hover:bg-warning/80 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                {starting ? 'Starting...' : `Start Voting (${status.ideaCount} ideas)`}
+              </button>
+            )}
+
+            {/* Close Submissions — VOTING + continuous flow + tier 1 */}
+            {status.phase === 'VOTING' && status.currentTier === 1 && (
+              <button
+                onClick={() => handleFacilitatorAction('close', 'Close submissions')}
+                disabled={actionLoading === 'close'}
+                className="py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                {actionLoading === 'close' ? '...' : 'Close Submissions'}
+              </button>
+            )}
+
+            {/* Advance Tier — VOTING */}
+            {status.phase === 'VOTING' && (
+              <button
+                onClick={() => handleFacilitatorAction('advance', 'Advance tier')}
+                disabled={actionLoading === 'advance'}
+                className="py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                {actionLoading === 'advance' ? '...' : 'Force Advance Tier'}
+              </button>
+            )}
+
+            {/* Extend Timer — VOTING */}
+            {status.phase === 'VOTING' && (
+              <button
+                onClick={() => handleFacilitatorAction('extend', 'Extend timer')}
+                disabled={actionLoading === 'extend'}
+                className="py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                {actionLoading === 'extend' ? '...' : 'Extend +15min'}
+              </button>
+            )}
+
+            {/* Reopen — VOTING or ACCUMULATING */}
+            {(status.phase === 'VOTING' || status.phase === 'ACCUMULATING') && (
+              <button
+                onClick={() => handleFacilitatorAction('reopen', 'Reopen')}
+                disabled={actionLoading === 'reopen'}
+                className="py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                {actionLoading === 'reopen' ? '...' : 'Reopen for Ideas'}
+              </button>
+            )}
+
+            {/* End Chant — any non-completed phase */}
+            <button
+              onClick={() => {
+                if (confirm('End this chant? This will force-complete all open cells and declare a winner.')) {
+                  handleFacilitatorAction('end', 'End chant')
+                }
+              }}
+              disabled={actionLoading === 'end'}
+              className="py-2 bg-error hover:bg-error/80 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              {actionLoading === 'end' ? '...' : 'End Chant'}
+            </button>
+
+            {/* Delete — any phase */}
+            <button
+              onClick={() => {
+                if (confirm('Delete this chant permanently? This cannot be undone.')) {
+                  handleFacilitatorAction('delete', 'Delete chant')
+                }
+              }}
+              disabled={actionLoading === 'delete'}
+              className="py-2 bg-red-900 hover:bg-red-800 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              {actionLoading === 'delete' ? '...' : 'Delete Chant'}
+            </button>
+          </div>
+
+          {startError && <p className="text-error text-xs mt-2">{startError}</p>}
+        </div>
+      )}
+
+      {/* Already voted indicator */}
+      {status.phase === 'VOTING' && status.hasVoted && !voteResult && (
+        <div className="mb-4 p-4 bg-success/10 border border-success/30 rounded-lg text-center">
+          <p className="text-success font-semibold mb-1">You've already voted this tier</p>
+          <p className="text-xs text-muted">Waiting for other voters to complete their cells.</p>
+        </div>
+      )}
+
       {/* VOTING PHASE: XP Allocation */}
-      {status.phase === 'VOTING' && !voteResult && votingIdeas.length > 0 && (
+      {status.phase === 'VOTING' && !voteResult && !status.hasVoted && votingIdeas.length > 0 && (
         <div className="mb-4 p-4 bg-surface rounded-lg border border-border">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-sm font-semibold">Allocate 10 XP</h2>

@@ -7,7 +7,7 @@ const UC_API_URL = process.env.UC_API_URL || 'https://unitychant.com'
 const CG_PLUGIN_SECRET = process.env.CG_PLUGIN_SECRET || ''
 
 interface UCRequestOptions {
-  method: 'GET' | 'POST'
+  method: 'GET' | 'POST' | 'DELETE'
   path: string
   body?: Record<string, unknown>
   params?: Record<string, string>

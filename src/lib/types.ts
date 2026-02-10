@@ -31,6 +31,7 @@ export interface ChantStatus {
   description?: string | null
   phase: 'SUBMISSION' | 'VOTING' | 'COMPLETED' | 'ACCUMULATING'
   allocationMode: string
+  continuousFlow: boolean
   currentTier: number
   memberCount: number
   ideaCount: number
@@ -44,7 +45,9 @@ export interface ChantStatus {
     currentCellVoters: number
     votersNeeded: number
     completedCells: number
+    currentCellIdeas?: { id: string; text: string; author: { id: string; name: string } }[]
   } | null
+  hasVoted: boolean
   createdAt: string
 }
 
