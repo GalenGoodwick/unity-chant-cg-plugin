@@ -352,28 +352,34 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
       {/* Ideas Submission */}
       {(status.phase === 'SUBMISSION' || status.phase === 'ACCUMULATING' || (status.phase === 'VOTING' && status.continuousFlow)) && (
         <>
-          <form onSubmit={handleSubmitIdea} className="mb-4 p-3 bg-surface rounded-lg border border-border">
-            <h2 className="text-sm font-semibold mb-2">Submit Your Idea</h2>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Your idea..."
-                value={ideaText}
-                onChange={(e) => setIdeaText(e.target.value)}
-                maxLength={500}
-                className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent"
-              />
-              <button
-                type="submit"
-                disabled={submitting || !ideaText.trim()}
-                className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm rounded-lg transition-colors whitespace-nowrap"
-              >
-                {submitting ? '...' : 'Submit'}
-              </button>
+          {status.submissionsClosed ? (
+            <div className="mb-4 p-3 bg-surface rounded-lg border border-border text-center">
+              <p className="text-sm text-muted">Submissions closed — voting in progress</p>
             </div>
-            {submitError && <p className="text-error text-xs mt-1">{submitError}</p>}
-            {submitSuccess && <p className="text-success text-xs mt-1">Idea submitted!</p>}
-          </form>
+          ) : (
+            <form onSubmit={handleSubmitIdea} className="mb-4 p-3 bg-surface rounded-lg border border-border">
+              <h2 className="text-sm font-semibold mb-2">Submit Your Idea</h2>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Your idea..."
+                  value={ideaText}
+                  onChange={(e) => setIdeaText(e.target.value)}
+                  maxLength={500}
+                  className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent"
+                />
+                <button
+                  type="submit"
+                  disabled={submitting || !ideaText.trim()}
+                  className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm rounded-lg transition-colors whitespace-nowrap"
+                >
+                  {submitting ? '...' : 'Submit'}
+                </button>
+              </div>
+              {submitError && <p className="text-error text-xs mt-1">{submitError}</p>}
+              {submitSuccess && <p className="text-success text-xs mt-1">Idea submitted!</p>}
+            </form>
+          )}
 
           {/* Creator hint */}
           {isCreator && status.phase === 'SUBMISSION' && status.ideaCount < 5 && (
@@ -408,18 +414,25 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
               </div>
             )}
 
-            {/* Complete Tier — VOTING */}
-            {status.phase === 'VOTING' && (
+            {/* Close Submissions — VOTING, continuous flow, not yet closed */}
+            {status.phase === 'VOTING' && status.continuousFlow && !status.submissionsClosed && (
               <div>
                 <button
-                  onClick={() => handleFacilitatorAction('close', 'Complete tier')}
+                  onClick={() => handleFacilitatorAction('close', 'Close submissions')}
                   disabled={actionLoading === 'close'}
-                  title="Close submissions, create the last cell from remaining ideas, and finalize voting for this tier."
+                  title="Stop accepting new ideas. Creates a final cell from any leftover ideas. Existing cells finish voting naturally."
                   className="w-full py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-xs font-medium rounded-lg transition-colors"
                 >
-                  {actionLoading === 'close' ? '...' : 'Complete Tier'}
+                  {actionLoading === 'close' ? '...' : 'Close Submissions'}
                 </button>
-                <p className="text-xs text-muted mt-1">Close submissions and create the last cell from remaining ideas. Voting finishes naturally at tier {status.currentTier}.</p>
+                <p className="text-xs text-muted mt-1">Stop accepting new ideas and create the final cell. Existing cells finish voting naturally.</p>
+              </div>
+            )}
+
+            {/* Submissions closed indicator */}
+            {status.phase === 'VOTING' && status.submissionsClosed && (
+              <div className="p-2 bg-accent/10 border border-accent/30 rounded-lg text-center">
+                <p className="text-xs text-accent font-medium">Submissions closed — waiting for cells to finish voting</p>
               </div>
             )}
 
