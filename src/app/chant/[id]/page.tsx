@@ -1044,8 +1044,8 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
             The top heart in each cell advances to the next tier. Hearts that advance are marked <strong className="text-[#ff3d8f]">Heart Advanced</strong>.
           </GuideSection>
 
-          <GuideSection title="4b. Heart Kept" icon={'🤍'} titleColor="text-[#ff3d8f]/60">
-            If your heart doesn&apos;t advance, don&apos;t worry — it&apos;s not gone. It&apos;s marked <strong className="text-[#ff3d8f]/60">Heart Kept</strong>, meaning the group heard it and it mattered. Every heart shapes the conversation, even if it doesn&apos;t win the cell. Your voice was part of the decision.
+          <GuideSection title="4b. Heart Kept" icon={'🤍'} titleColor="text-[rgba(255,61,143,0.6)]">
+            If your heart doesn&apos;t advance, don&apos;t worry — it&apos;s not gone. It&apos;s marked <strong className="text-[rgba(255,61,143,0.6)]">Heart Kept</strong>, meaning the group heard it and it mattered. Every heart shapes the conversation, even if it doesn&apos;t win the cell. Your voice was part of the decision.
           </GuideSection>
 
           <GuideSection title="5. 🔥 Heart Declared" icon={'👑'} titleColor="text-success">
@@ -1242,8 +1242,8 @@ function IdeaStatusBadge({ status, isChampion, tier }: { status: string; isChamp
   const map: Record<string, { label: string; color: string }> = {
     ADVANCING: { label: 'Heart Advanced', color: 'text-[#ff3d8f]' },
     IN_VOTING: { label: 'In Cell', color: 'text-success' },
-    ELIMINATED: { label: 'Heart Kept', color: 'text-[#ff3d8f]/60' },
-    RETIRED: { label: 'Heart Kept', color: 'text-[#ff3d8f]/60' },
+    ELIMINATED: { label: 'Heart Kept', color: 'text-[rgba(255,61,143,0.6)]' },
+    RETIRED: { label: 'Heart Kept', color: 'text-[rgba(255,61,143,0.6)]' },
     SUBMITTED: { label: 'Submitted', color: 'text-accent-light' },
     PENDING: { label: 'Waiting', color: 'text-muted' },
   }
