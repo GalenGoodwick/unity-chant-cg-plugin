@@ -48,32 +48,44 @@ export default function Home() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user || !community || !question.trim()) return
+    if (!user || !community) {
+      setCreateError(`Missing context: user=${!!user}, community=${!!community}`)
+      return
+    }
+    if (!question.trim()) {
+      setCreateError('Question is required')
+      return
+    }
 
     setCreating(true)
     setCreateError('')
+
+    const payload = {
+      cgUserId: user.id,
+      cgUsername: user.name,
+      cgImageUrl: user.imageUrl,
+      cgCommunityId: community.id,
+      cgCommunityName: community.title,
+      question: question.trim(),
+      description: description.trim() || undefined,
+      allocationMode: mode,
+      continuousFlow: continuous,
+      ideaGoal,
+    }
+    console.log('[UC] Creating chant:', payload)
 
     try {
       const res = await fetch('/api/chants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cgUserId: user.id,
-          cgUsername: user.name,
-          cgImageUrl: user.imageUrl,
-          cgCommunityId: community.id,
-          cgCommunityName: community.title,
-          question: question.trim(),
-          description: description.trim() || undefined,
-          allocationMode: mode,
-          continuousFlow: continuous,
-          ideaGoal,
-        }),
+        body: JSON.stringify(payload),
       })
 
+      const data = await res.json()
+      console.log('[UC] Create response:', res.status, data)
+
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to create')
+        throw new Error(data.error || `Failed to create (${res.status})`)
       }
 
       setQuestion('')
@@ -81,6 +93,7 @@ export default function Home() {
       setShowCreate(false)
       fetchChants()
     } catch (err) {
+      console.error('[UC] Create error:', err)
       setCreateError((err as Error).message)
     } finally {
       setCreating(false)
