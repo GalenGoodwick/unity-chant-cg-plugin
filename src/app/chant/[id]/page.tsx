@@ -588,7 +588,7 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
           )}
 
           {status.phase === 'SUBMISSION' && (
-            <EmptyState icon={'⚖'} title="Voting hasn't started yet" subtitle={<>Hearts are being collected. Switch to <TabLink onClick={() => setActiveTab('submit')} label="Submit" /> to add yours.</>} />
+            <EmptyState icon={'⚖'} title="Voting hasn't started yet" subtitle={<>Hearts are gathering. Switch to <TabLink onClick={() => setActiveTab('submit')} label="Submit" /> to add yours.</>} />
           )}
 
           {status.phase === 'COMPLETED' && !status.champion && (
@@ -1044,8 +1044,8 @@ export default function ChantDetail({ params }: { params: Promise<{ id: string }
             The top heart in each cell advances to the next tier. Hearts that advance are marked <strong className="text-[#ff3d8f]">Heart Advanced</strong>.
           </GuideSection>
 
-          <GuideSection title="4b. Heart Kept" icon={'🤍'} titleColor="text-[rgba(255,61,143,0.6)]">
-            If your heart doesn&apos;t advance, don&apos;t worry — it&apos;s not gone. It&apos;s marked <strong className="text-[rgba(255,61,143,0.6)]">Heart Kept</strong>, meaning the group heard it and it mattered. Every heart shapes the conversation, even if it doesn&apos;t win the cell. Your voice was part of the decision.
+          <GuideSection title="4b. Heart Kept" icon={'🤍'} titleColor="text-muted">
+            If your heart doesn&apos;t advance, don&apos;t worry — it&apos;s not gone. It&apos;s marked <strong className="text-muted">Heart Kept</strong>, meaning the group heard it and it mattered. Every heart shapes the conversation, even if it doesn&apos;t win the cell. Your voice was part of the decision.
           </GuideSection>
 
           <GuideSection title="5. 🔥 Heart Declared" icon={'👑'} titleColor="text-success">
@@ -1239,17 +1239,17 @@ function PhaseBadge({ phase }: { phase: string }) {
 
 function IdeaStatusBadge({ status, isChampion, tier }: { status: string; isChampion: boolean; tier?: number }) {
   if (isChampion) return <span className="text-[11px] text-success font-bold">🔥 Heart Declared{tier ? ` (Tier ${tier})` : ''}</span>
-  const map: Record<string, { label: string; color: string }> = {
+  const map: Record<string, { label: string; color: string; showTier?: boolean }> = {
     ADVANCING: { label: 'Heart Advanced', color: 'text-[#ff3d8f]' },
     IN_VOTING: { label: 'In Cell', color: 'text-success' },
-    ELIMINATED: { label: 'Heart Kept', color: 'text-[rgba(255,61,143,0.6)]' },
-    RETIRED: { label: 'Heart Kept', color: 'text-[rgba(255,61,143,0.6)]' },
+    ELIMINATED: { label: 'Heart Kept', color: 'text-muted', showTier: true },
+    RETIRED: { label: 'Heart Kept', color: 'text-muted', showTier: true },
     SUBMITTED: { label: 'Submitted', color: 'text-accent-light' },
     PENDING: { label: 'Waiting', color: 'text-muted' },
   }
   const badge = map[status]
   if (!badge || !badge.label) return null
-  return <span className={`text-[11px] ${badge.color}`}>{badge.label}</span>
+  return <span className={`text-[11px] ${badge.color}`}>{badge.label}{badge.showTier && tier ? ` (Tier ${tier})` : ''}</span>
 }
 
 function formatTimeAgo(dateStr: string): string {
